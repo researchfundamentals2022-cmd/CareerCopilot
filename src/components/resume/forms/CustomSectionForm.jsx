@@ -39,6 +39,10 @@ function getMonthNumber(monthName) {
 }
 
 function normalizeCustomItems(value) {
+  // If value is undefined, it means data is still loading from DB.
+  // Returning null allows the parent to decide whether to show a loader or nothing.
+  if (value === undefined) return null;
+
   if (!Array.isArray(value) || value.length === 0) {
     return [createEmptyCustomSectionItem()];
   }
@@ -97,12 +101,13 @@ function CustomSectionForm({
   const [itemErrors, setItemErrors] = useState([]);
 
   const yearOptions = useMemo(() => getYearOptions(), []);
-  const items = normalizeCustomItems(value);
+  const items = useMemo(() => normalizeCustomItems(value), [value]);
 
   useEffect(() => {
+    if (!items) return;
     const allErrors = items.map((item) => validateCustomItem(item));
     setItemErrors(allErrors);
-  }, [value]);
+  }, [items]);
 
   const saveItems = (newItems) => {
     const normalizedItems = normalizeCustomItems(newItems);
@@ -172,6 +177,17 @@ function CustomSectionForm({
       systemContext: `This is for a custom resume section titled "${label}".`,
     });
   };
+
+  if (items === null) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center rounded-[24px] border border-slate-200 bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-primary)] border-t-transparent"></div>
+          <p className="text-slate-500 animate-pulse">Syncing {label}...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="w-full">

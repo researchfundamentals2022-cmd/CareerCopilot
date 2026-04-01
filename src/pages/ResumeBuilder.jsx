@@ -59,10 +59,16 @@ function ResumeBuilder() {
   const triggerValidationFeedback = (message) => {
     setShowValidationErrors(true);
     setIsShaking(true);
-    setValidationToast(message || "Please fill in all required fields before proceeding.");
-    formContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => setIsShaking(false), 600);
-    setTimeout(() => setValidationToast(""), 4000);
+    setValidationToast(message || "Review required fields.");
+    
+    // Smooth scroll only if the container exists and we aren't near the top
+    const rect = formContainerRef.current?.getBoundingClientRect();
+    if (rect && (rect.top < -50 || rect.top > window.innerHeight)) {
+      formContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    
+    setTimeout(() => setIsShaking(false), 500);
+    setTimeout(() => setValidationToast(""), 3000);
   };
 
   const allSections = useMemo(() => {
@@ -346,7 +352,7 @@ function ResumeBuilder() {
             userId,
             resumeData,
             customSections,
-            regenerateReadModel: false,
+            regenerateReadModel: true, // Always do a direct sync update first
           });
 
           clearSavedDirtyKeys(keysToSave);
@@ -354,12 +360,13 @@ function ResumeBuilder() {
           setProjectionStatus("updating");
           setProjectionMessage(
             background
-              ? "Saved. Preview updating in background..."
+              ? "Saved. Preview updating..."
               : "Changes saved. Preview updating..."
           );
 
           let projectionJobId = null;
 
+          // Attempt async projection only as a secondary enhancement
           try {
             const projectionResult = await requestResumeProjection({
               resumeId,
@@ -371,16 +378,9 @@ function ResumeBuilder() {
             if (projectionJobId) {
               setActiveProjectionJobId(projectionJobId);
             }
-
-            if (!projectionResult?.workerTriggered) {
-              setProjectionMessage("Changes saved. Preview update queued...");
-            }
           } catch (projectionError) {
-            console.error("Projection request failed:", projectionError);
-            setProjectionStatus("error");
-            setProjectionMessage(
-              "Changes saved, but preview update failed."
-            );
+            // Silently fall back to the direct sync update already performed
+            console.warn("Background projection queue unavailable, using direct sync.");
           }
 
           return { ok: true, projectionJobId };
@@ -1002,13 +1002,10 @@ function ResumeBuilder() {
         (item) =>
           item.role?.trim() &&
           item.company?.trim() &&
-          item.employmentType?.trim() &&
-          item.location?.trim() &&
           item.startMonth &&
           item.startYear &&
           (item.currentlyWorking || (item.endMonth && item.endYear)) &&
-          item.description?.trim() &&
-          item.description.trim().length >= 40
+          item.description?.trim()
       );
       return validRows.length > 0;
     }
@@ -1018,13 +1015,10 @@ function ResumeBuilder() {
       const validRows = projects.filter(
         (item) =>
           item.title?.trim() &&
-          item.projectType?.trim() &&
-          item.organization?.trim() &&
           item.startMonth &&
           item.startYear &&
           (item.currentlyWorking || (item.endMonth && item.endYear)) &&
-          item.description?.trim() &&
-          item.description.trim().length >= 30
+          item.description?.trim()
       );
       return validRows.length > 0;
     }
@@ -1043,7 +1037,7 @@ function ResumeBuilder() {
     if (key === "summary") {
       const summary = resumeData.summary || {};
       const text = summary.text?.trim() || "";
-      return !!text && text.length >= 40;
+      return !!text;
     }
 
     if (key === "achievements") {
@@ -1055,8 +1049,7 @@ function ResumeBuilder() {
           item.organizerOrRank?.trim() &&
           item.month &&
           item.year &&
-          item.description?.trim() &&
-          item.description.trim().length >= 20
+          item.description?.trim()
       );
       return validRows.length > 0;
     }
@@ -1079,8 +1072,7 @@ function ResumeBuilder() {
       const validRows = customData.filter(
         (item) =>
           item.title?.trim() &&
-          item.description?.trim() &&
-          item.description.trim().length >= 10
+          item.description?.trim()
       );
       return validRows.length > 0;
     }
@@ -1171,9 +1163,12 @@ function ResumeBuilder() {
     }
 
     setShowValidationErrors(false);
-    queueCurrentSectionBackgroundSave();
+    // Snappy transition
     setCurrentStep(nextStep);
     window.scrollTo({ top: 0, behavior: "auto" });
+    
+    // Background save happens after transition for speed
+    queueCurrentSectionBackgroundSave();
   };
 
   const renderActionButtons = ({ compact = false } = {}) => {

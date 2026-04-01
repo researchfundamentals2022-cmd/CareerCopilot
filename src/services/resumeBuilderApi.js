@@ -880,13 +880,24 @@ const saveCustomSectionsToSupabase = async ({
   customSections,
   resumeData,
 }) => {
-  const rows = customSections.map((section, index) => ({
-    resume_id: resumeId,
-    section_key: safeString(section.key),
-    section_title: safeString(section.label),
-    content_json: Array.isArray(resumeData[section.key]) ? resumeData[section.key] : [],
-    sort_order: index + 1,
-  }));
+  const rows = customSections.map((section, index) => {
+    const row = {
+      resume_id: resumeId,
+      section_key: safeString(section.key),
+      section_title: safeString(section.label),
+      sort_order: index + 1,
+    };
+
+    // Only include content_json if it actually exists in the local state.
+    // This prevents wiping out database data with an empty array if the section hasn't loaded yet.
+    if (Object.prototype.hasOwnProperty.call(resumeData, section.key)) {
+      row.content_json = Array.isArray(resumeData[section.key])
+        ? resumeData[section.key]
+        : [];
+    }
+
+    return row;
+  });
 
   const { data: existingRows, error: existingError } = await supabase
     .from("resume_custom_sections")
