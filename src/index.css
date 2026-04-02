@@ -154,7 +154,7 @@ body {
     max-width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important; /* Extremely important for mobile capture */
     display: block !important;
     z-index: 2147483647 !important; /* Max z-index */
     background: #ffffff !important;

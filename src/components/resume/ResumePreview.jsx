@@ -129,6 +129,7 @@ const getPreviewStatusMeta = (status) => {
 export default function ResumePreview({
   resumeData,
   resumeId,
+  isSyncing = false,
   projectionStatus = "idle",
   projectionMessage = "",
   latestProjectedVersion = null,
@@ -156,9 +157,22 @@ export default function ResumePreview({
   const pageRef = useRef(null);
   const wrapperRef = useRef(null);
 
-  const fitConfig = FIT_PRESETS[fitIndex];
-  const exportInProgress = isPreparingPdf || isPreparingWord || isPrinting;
   const statusMeta = getPreviewStatusMeta(projectionStatus);
+  const fitConfig = FIT_PRESETS[fitIndex];
+
+  const isDataComplete = useMemo(() => {
+    if (!safeResumeData.contact?.fullName) return false;
+    // Basic heuristic: check if common sections are arrays if they exist in schema
+    const coreKeys = ["education", "experience", "skills", "projects"];
+    for (const key of coreKeys) {
+      if (safeResumeData[key] !== undefined && !Array.isArray(safeResumeData[key])) {
+        return false;
+      }
+    }
+    return true;
+  }, [safeResumeData]);
+
+  const exportInProgress = isPreparingPdf || isPreparingWord || isPrinting || isSyncing;
 
   const scaledPreviewWidth = Math.round(PAPER_WIDTH * viewScale);
   const scaledPreviewHeight = Math.round(PAPER_HEIGHT * viewScale);
@@ -268,10 +282,12 @@ export default function ResumePreview({
         return;
       }
 
-      const availableWidth = Math.max(width - 40, 280);
+      // We need to account for both the wrapper padding AND the resume container internal margins.
+      // 48px buffer provides "breathing room" to ensure NO horizontal scrollbar is triggered.
+      const availableWidth = Math.max(width - 48, 280);
       const nextScale =
         availableWidth < PAPER_WIDTH
-          ? Math.max(availableWidth / PAPER_WIDTH, 0.42)
+          ? Math.max(availableWidth / PAPER_WIDTH, 0.38)
           : 1;
 
       setViewScale(nextScale);
@@ -324,14 +340,17 @@ export default function ResumePreview({
     try {
       setIsPreparingPdf(true);
 
-      const exportData = await getReadModelBackedResumeData();
-      setPreviewData(exportData);
+      // Use the live data directly instead of fetching from the database.
+      // This ensures the PDF exactly matches the preview the user sees.
+      setPreviewData(safeResumeData);
 
-      await waitForFrames(3);
+      // Mobile engines need more time to settle the layout after transform resets.
+      // 6 frames (~100ms) is the "sweet spot" for most mobile browsers.
+      await waitForFrames(6);
       document.body.classList.add("printing-resume");
       setIsPrinting(true);
 
-      await waitForFrames(2);
+      await waitForFrames(4);
       window.print();
     } catch (error) {
       console.error("PDF export failed:", error);
@@ -346,8 +365,8 @@ export default function ResumePreview({
   const handleDownloadWord = async () => {
     try {
       setIsPreparingWord(true);
-      const exportData = await getReadModelBackedResumeData();
-      await generateWordDocument(exportData);
+      // Use the live data directly for Word export as well.
+      await generateWordDocument(safeResumeData);
     } catch (error) {
       console.error("Word export failed:", error);
       alert("Word export failed. Please try again.");
@@ -357,189 +376,135 @@ export default function ResumePreview({
   };
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-      <aside className="no-print xl:sticky xl:top-6">
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-                Choose Template
-              </h3>
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[10px] font-bold text-[var(--color-primary)]">
-                3
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-2.5">
-              {TEMPLATES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setTemplate(item.id);
-                    if (onTemplateChange) onTemplateChange(item.id);
-                  }}
-                  disabled={exportInProgress}
-                  className={`group relative overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all duration-300 ${
-                    template === item.id
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5 shadow-sm shadow-[var(--color-primary)]/10"
-                      : "border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white hover:shadow-md"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p
-                      className={`text-sm font-bold transition-colors ${
-                        template === item.id
-                          ? "text-[var(--color-primary)]"
-                          : "text-slate-700 group-hover:text-slate-900"
-                      }`}
-                    >
-                      {item.name}
-                    </p>
-                    {template === item.id && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-sm">
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500 transition-colors group-hover:text-slate-600">
-                    {item.desc}
+    <div className="flex flex-col gap-6 xl:flex-row xl:items-start max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-10">
+      <aside className="no-print w-full space-y-5 xl:w-[280px] xl:sticky xl:top-24">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/50">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Template Selection
+            </h3>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[10px] font-bold text-[var(--color-primary)]">
+              {TEMPLATES.length}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-2.5">
+            {TEMPLATES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setTemplate(item.id);
+                  if (onTemplateChange) onTemplateChange(item.id);
+                }}
+                disabled={exportInProgress}
+                className={`group relative overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all duration-300 ${
+                  template === item.id
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5 shadow-sm"
+                    : "border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white hover:shadow-md"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                <div className="flex items-center justify-between">
+                  <p
+                    className={`text-sm font-bold transition-colors ${
+                      template === item.id
+                        ? "text-[var(--color-primary)]"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {item.name}
                   </p>
-                  
-                  {/* Subtle accent line for selected state */}
                   {template === item.id && (
-                    <div className="absolute left-0 top-0 h-full w-1 bg-[var(--color-primary)]" />
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-sm">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
                   )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {fitIndex > 0 && !needsMultiPage && (
-            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-amber-700">
-                Auto Adjusted
-              </p>
-              <p className="mt-2 text-[12px] leading-relaxed text-amber-900">
-                Content density was reduced slightly to keep the resume within a
-                cleaner single-page layout.
-              </p>
-            </div>
-          )}
-
-          {needsMultiPage && (
-            <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-rose-700">
-                Too Much Content
-              </p>
-              <p className="mt-2 text-[12px] leading-relaxed text-rose-900">
-                This content is exceeding safe single-page limits. It should
-                move to a multi-page template instead of shrinking further.
-              </p>
-            </div>
-          )}
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.pillClass}`}
-              >
-                {statusMeta.title}
-              </span>
-
-              {latestProjectedVersion !== null ? (
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-                  Version {latestProjectedVersion}
-                </span>
-              ) : null}
-            </div>
-
-            <p className={`mt-3 text-sm font-semibold ${statusMeta.textClass}`}>
-              Preview Status
-            </p>
-
-            {projectionMessage ? (
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                {projectionMessage}
-              </p>
-            ) : (
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                Preview uses the latest available read model when export is prepared.
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-800">Export Resume</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
-              Download your resume in standard formats.
-            </p>
-
-            <div className="mt-4 space-y-3">
-              <button
-                type="button"
-                onClick={handleDownloadPDF}
-                disabled={exportInProgress}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <IoDownload size={18} />
-                {isPreparingPdf || isPrinting ? "Preparing PDF..." : "Download PDF"}
+                </div>
               </button>
+            ))}
+          </div>
+        </div>
 
-              <button
-                type="button"
-                onClick={handleDownloadWord}
-                disabled={exportInProgress}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <IoDocumentText size={18} />
-                {isPreparingWord ? "Preparing Word..." : "Download Word"}
-              </button>
-            </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+           <div className="flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${projectionStatus === 'up_to_date' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 animate-pulse'}`} />
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              {statusMeta.title}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">Export Options</h3>
+          <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
+            Professional PDF & Word for ATS.
+          </p>
+
+          <div className="mt-4 space-y-3">
+            <button
+              type="button"
+              onClick={handleDownloadPDF}
+              disabled={exportInProgress || !isDataComplete}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <IoDownload size={18} />
+              {isSyncing 
+                ? "Syncing Data..." 
+                : (isPreparingPdf || isPrinting ? "Preparing PDF..." : "Download PDF")}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadWord}
+              disabled={exportInProgress}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <IoDocumentText size={18} />
+              Download Word
+            </button>
           </div>
         </div>
       </aside>
 
-      <section className="min-w-0">
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="no-print mb-4 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="min-w-0 flex-1">
+        <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-4 shadow-sm sm:p-6 lg:p-10">
+          <div className="no-print mb-8 flex flex-col gap-4 border-b border-slate-200/60 pb-8 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-                Live Preview
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                Standard Viewport
               </p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-800">
+              <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-800">
                 {TEMPLATES.find((item) => item.id === template)?.name || "Classic ATS"}
               </h3>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-                Scale {Math.round(viewScale * 100)}%
+            <div className="flex items-center gap-3">
+              <span className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold tracking-widest text-slate-500">
+                SCALE {Math.round(viewScale * 100)}%
               </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-                A4 Preview
+              <span className="inline-flex rounded-lg border border-slate-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold tracking-widest text-indigo-700 uppercase">
+                HD PREVIEW
               </span>
             </div>
           </div>
 
           <div
             ref={wrapperRef}
-            className="resume-print-root overflow-x-auto overflow-y-hidden rounded-2xl bg-slate-100/80 p-3 sm:p-5"
+            className="resume-print-root flex justify-center overflow-x-auto overflow-y-hidden rounded-2xl bg-white p-4 ring-1 ring-slate-200 shadow-inner sm:p-10"
           >
-            <div className="flex justify-center">
+            <div className="flex justify-center relative">
               <div
                 style={{
-                  width: isPrinting ? `${PAPER_WIDTH}px` : `${scaledPreviewWidth}px`,
-                  height: isPrinting
-                    ? `${PAPER_HEIGHT}px`
-                    : `${scaledPreviewHeight}px`,
+                  width: isPrinting ? "210mm" : `${scaledPreviewWidth}px`,
+                  height: isPrinting ? "297mm" : `${scaledPreviewHeight}px`,
                   position: "relative",
+                  transition: "all 0.2s ease-in-out",
                 }}
               >
                 <div
-                  className="resume-print-shell bg-white ring-1 ring-slate-200"
+                  className="resume-print-shell bg-white"
                   style={{
                     width: `${PAPER_WIDTH}px`,
                     minWidth: `${PAPER_WIDTH}px`,
@@ -550,12 +515,13 @@ export default function ResumePreview({
                     transformOrigin: "top left",
                     boxShadow: isPrinting
                       ? "none"
-                      : "0 18px 40px rgba(15, 23, 42, 0.10)",
+                      : "0 25px 80px -20px rgba(0, 0, 0, 0.18), 0 0 1px rgba(0,0,0,0.1)",
                     overflow: "hidden",
                     position: "absolute",
                     top: 0,
                     left: 0,
                     background: "#ffffff",
+                    borderRadius: isPrinting ? "0" : "2px",
                   }}
                 >
                   <div

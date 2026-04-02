@@ -952,9 +952,11 @@ const buildInitializedResumePayload = ({
   }));
 
   const customSectionSeeds = finalCustomSections.reduce((acc, section) => {
-    acc[section.key] = includeCustomContent
-      ? getArray(customSections.find((item) => item.key === section.key)?.content)
-      : [];
+    if (includeCustomContent) {
+      acc[section.key] = getArray(
+        customSections.find((item) => item.key === section.key)?.content
+      );
+    }
     return acc;
   }, {});
 
@@ -1060,11 +1062,6 @@ export const initializeResumeBuilder = async (user, { lazy = true, resumeId = nu
   const cachedSummary = getCachedSection(primaryResumeId, "summary");
 
   if (cachedMeta.length > 0 && cachedContact && cachedSummary) {
-    const customSectionSeeds = cachedMeta.reduce((acc, section) => {
-      acc[section.key] = [];
-      return acc;
-    }, {});
-
     return {
       resumeId: primaryResumeId,
       userId,
@@ -1072,7 +1069,6 @@ export const initializeResumeBuilder = async (user, { lazy = true, resumeId = nu
       loadedSectionKeys: ["contact", "summary"],
       resumeData: {
         ...emptyResume,
-        ...customSectionSeeds,
         contact: {
           ...emptyResume.contact,
           ...cachedContact.contact,

@@ -54,6 +54,9 @@ function ResumeBuilder() {
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [validationToast, setValidationToast] = useState("");
+  const [isReviewSyncing, setIsReviewSyncing] = useState(false);
+
+  const prevStepRef = useRef(currentStep);
   const formContainerRef = useRef(null);
 
   const triggerValidationFeedback = (message) => {
@@ -121,12 +124,9 @@ function ResumeBuilder() {
   const shouldTrackProjection =
     USE_ASYNC_PROJECTION &&
     !!resumeId &&
-    (
-      projectionStatus === "saving" ||
+    (projectionStatus === "saving" ||
       projectionStatus === "updating" ||
-      !!activeProjectionJobId ||
-      currentSection?.key === "review"
-    );
+      !!activeProjectionJobId);
 
   const getCurrentStatus = () => {
     try {
@@ -470,6 +470,21 @@ function ResumeBuilder() {
     [saveDirtySections]
   );
 
+  const queueCurrentSectionBackgroundSave = useCallback(() => {
+    if (!currentSection?.key) return;
+
+    if (currentSection.key === "review") {
+      if (dirtySections.size > 0) {
+        saveSectionsInBackground(Array.from(dirtySections));
+      }
+      return;
+    }
+
+    if (dirtySections.has(currentSection.key)) {
+      saveSectionsInBackground([currentSection.key]);
+    }
+  }, [currentSection?.key, dirtySections, saveSectionsInBackground]);
+
   const ensureSectionLoaded = useCallback(
     async (sectionKey) => {
       if (!resumeId || !sectionKey || sectionKey === "review") return;
@@ -533,6 +548,11 @@ function ResumeBuilder() {
       if (uniqueKeys.length === 0) return;
 
       try {
+        const isReviewJump = currentSection?.key === "review";
+        if (isReviewJump) {
+          setIsReviewSyncing(true);
+        }
+
         setLoadingSections((prev) => {
           const next = new Set(prev);
           uniqueKeys.forEach((key) => next.add(key));
@@ -559,6 +579,7 @@ function ResumeBuilder() {
       } catch (error) {
         console.error("Failed to lazy load multiple sections:", error);
       } finally {
+        setIsReviewSyncing(false);
         setLoadingSections((prev) => {
           const next = new Set(prev);
           uniqueKeys.forEach((key) => next.delete(key));
@@ -566,7 +587,7 @@ function ResumeBuilder() {
         });
       }
     },
-    [loadedSections, loadingSections, resumeId]
+    [resumeId, currentSection?.key, loadedSections, loadingSections]
   );
 
   const sectionAwareSetResumeData = useCallback(
@@ -679,9 +700,25 @@ function ResumeBuilder() {
     resumeId,
   ]);
 
+  // Preload next section data in the background for smooth transitions
   useEffect(() => {
-    if (!resumeId || currentSection?.key !== "review") return;
-    refreshProjectionState();
+    if (!resumeId || currentStep >= allSections.length - 1) return;
+    
+    const nextSection = allSections[currentStep + 1];
+    if (nextSection && nextSection.key !== "review") {
+      // 1.5s delay to ensure current section interactive priority
+      const timer = setTimeout(() => {
+        ensureSectionLoaded(nextSection.key);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, allSections, ensureSectionLoaded, resumeId]);
+
+  useEffect(() => {
+    if (!resumeId || !currentSection?.key) return;
+    if (currentSection.key === "review") {
+      refreshProjectionState();
+    }
   }, [currentSection?.key, refreshProjectionState, resumeId]);
 
   useEffect(() => {
@@ -970,6 +1007,13 @@ function ResumeBuilder() {
   const validateSectionDataByKey = (key) => {
     if (!key) return true;
 
+    // IMPORTANT: If data is not yet loaded (undefined), we assume it's valid
+    // to allow smooth jumping to Review. The Review page will trigger its own
+    // lazy-loading and display warnings if the fetched data is truly incomplete.
+    if (resumeData[key] === undefined && !loadedSections.has(key)) {
+      return true;
+    }
+
     if (key === "contact") {
       const contact = resumeData.contact || {};
       return !!(
@@ -998,27 +1042,37 @@ function ResumeBuilder() {
 
     if (key === "experience") {
       const experience = Array.isArray(resumeData.experience) ? resumeData.experience : [];
+      if (experience.length === 0) return false;
+      
       const validRows = experience.filter(
         (item) =>
           item.role?.trim() &&
           item.company?.trim() &&
+          item.employmentType?.trim() &&
+          item.location?.trim() &&
           item.startMonth &&
           item.startYear &&
           (item.currentlyWorking || (item.endMonth && item.endYear)) &&
-          item.description?.trim()
+          item.description?.trim() &&
+          item.description.trim().length >= 40
       );
       return validRows.length > 0;
     }
 
     if (key === "projects") {
       const projects = Array.isArray(resumeData.projects) ? resumeData.projects : [];
+      if (projects.length === 0) return false;
+
       const validRows = projects.filter(
         (item) =>
           item.title?.trim() &&
+          item.projectType?.trim() &&
+          item.organization?.trim() &&
           item.startMonth &&
           item.startYear &&
           (item.currentlyWorking || (item.endMonth && item.endYear)) &&
-          item.description?.trim()
+          item.description?.trim() &&
+          item.description.trim().length >= 30
       );
       return validRows.length > 0;
     }
@@ -1069,6 +1123,8 @@ function ResumeBuilder() {
 
     if (key.startsWith("custom_")) {
       const customData = Array.isArray(resumeData[key]) ? resumeData[key] : [];
+      if (customData.length === 0) return false;
+      
       const validRows = customData.filter(
         (item) =>
           item.title?.trim() &&
@@ -1080,49 +1136,26 @@ function ResumeBuilder() {
     return true;
   };
 
-
-
-  const queueCurrentSectionBackgroundSave = useCallback(() => {
-    if (!currentSection?.key) return;
-
-    if (currentSection.key === "review") {
-      if (dirtySections.size > 0) {
-        saveSectionsInBackground(Array.from(dirtySections));
-      }
-      return;
+  const checkValidationBeforeStepChange = useCallback((targetIndex) => {
+    // INTELLIGENT NAVIGATION GUARD:
+    // Only block the user if the CURRENT section they are looking at is invalid.
+    // This allows them to jump from Step 1 to Step 10 in one click for previously filled resumes,
+    // while still providing the "shaky effect" if they try to skip a section they are actively breaking.
+    if (!validateSectionDataByKey(currentSection?.key)) {
+      triggerValidationFeedback(`Required fields are missing in "${currentSection?.label}".`);
+      return false;
     }
+    
+    return true;
+  }, [currentSection?.key, currentSection?.label, validateSectionDataByKey]);
 
-    if (dirtySections.has(currentSection.key)) {
-      saveSectionsInBackground([currentSection.key]);
-    }
-  }, [currentSection?.key, dirtySections, saveSectionsInBackground]);
+
+
+
 
   const handleGoToSection = (index) => {
     if (index === currentStep) return;
-
-    const isTargetReview = allSections[index]?.key === "review";
-
-    if (isTargetReview) {
-      // Final sweep: ensure all sections are valid before going to Review
-      for (let i = 0; i < index; i++) {
-        const sectionToValidate = allSections[i]?.key;
-        if (!validateSectionDataByKey(sectionToValidate)) {
-          triggerValidationFeedback(`Please complete the "${allSections[i]?.label}" section first.`);
-          
-          if (i !== currentStep) {
-            queueCurrentSectionBackgroundSave();
-            setCurrentStep(i);
-          }
-          return;
-        }
-      }
-    } else if (index > currentStep) {
-      // Jumping forward to a regular section: only block if current view is invalid
-      if (!validateSectionDataByKey(currentSection?.key)) {
-        triggerValidationFeedback(`Please complete the "${currentSection?.label}" section first.`);
-        return;
-      }
-    }
+    if (!checkValidationBeforeStepChange(index)) return;
 
     setShowValidationErrors(false);
     queueCurrentSectionBackgroundSave();
@@ -1138,36 +1171,11 @@ function ResumeBuilder() {
 
   const goToNext = () => {
     const nextStep = Math.min(currentStep + 1, allSections.length - 1);
-    const isTargetReview = allSections[nextStep]?.key === "review";
-
-    if (isTargetReview) {
-      // Final sweep: ensure all sections are valid before going to Review
-      for (let i = 0; i < nextStep; i++) {
-        const sectionToValidate = allSections[i]?.key;
-        if (!validateSectionDataByKey(sectionToValidate)) {
-          triggerValidationFeedback(`Please complete the "${allSections[i]?.label}" section first.`);
-          
-          if (i !== currentStep) {
-            queueCurrentSectionBackgroundSave();
-            setCurrentStep(i);
-          }
-          return;
-        }
-      }
-    } else {
-      // Normal next step: only block if current view is invalid
-      if (!validateSectionDataByKey(currentSection?.key)) {
-        triggerValidationFeedback(`Please complete the "${currentSection?.label}" section first.`);
-        return;
-      }
-    }
+    if (!checkValidationBeforeStepChange(nextStep)) return;
 
     setShowValidationErrors(false);
-    // Snappy transition
     setCurrentStep(nextStep);
     window.scrollTo({ top: 0, behavior: "auto" });
-    
-    // Background save happens after transition for speed
     queueCurrentSectionBackgroundSave();
   };
 
@@ -1557,16 +1565,22 @@ function ResumeBuilder() {
               </div>
             )}
 
-            <div ref={formContainerRef} className={`rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5 md:p-6 lg:p-7 ${isShaking ? "animate-shake" : ""}`}>
+            <div ref={formContainerRef} className={`rounded-[24px] border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.06)] md:rounded-[32px] ${isShaking ? "animate-shake" : ""}`}>
               {currentSection?.key === "review" ? (
-                isReviewLoading ? (
-                  <div className="flex min-h-[300px] items-center justify-center">
-                    <p className="text-sm font-medium text-[var(--color-muted)]">
-                      Loading all resume sections for review...
+                isReviewSyncing ? (
+                  <div className="flex min-h-[400px] flex-col items-center justify-center p-8 text-center">
+                    <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-primary)] border-t-transparent" />
+                    <p className="text-lg font-semibold text-slate-800">
+                      Preparing all resume sections...
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--color-muted)]">
+                      Ensuring your high-quality preview is complete.
                     </p>
                   </div>
                 ) : (
                   <ResumePreview
+                    resumeId={resumeId}
+                    isSyncing={isReviewSyncing || loadingSections.size > 0}
                     resumeData={{
                       ...resumeData,
                       customSections: customSections.map((cs) => ({
@@ -1575,7 +1589,6 @@ function ResumeBuilder() {
                         content: resumeData[cs.key] || [],
                       })),
                     }}
-                    resumeId={resumeId}
                     projectionStatus={projectionStatus}
                     projectionMessage={projectionMessage}
                     latestProjectedVersion={latestProjectedVersion}
