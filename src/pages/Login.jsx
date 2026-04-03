@@ -17,10 +17,30 @@ function Login() {
   const [message, setMessage] = useState("");
   const [checkingUser, setCheckingUser] = useState(true);
 
+  const getInitialRoute = async (user) => {
+    if (!user) return "/how-it-works";
+    
+    try {
+      const { data: onboardingData } = await supabase
+        .from("onboarding")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+        
+      if (onboardingData) return "/dashboard";
+    } catch (err) {
+      // Not onboarded
+    }
+    return "/how-it-works";
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        navigate("/how-it-works");
+        // We no longer auto-navigate away. 
+        // This allows users to actually see and click the "Back to Home" link 
+        // even if they are currently logged in.
+        setCheckingUser(false);
       } else {
         setCheckingUser(false);
       }
@@ -47,20 +67,22 @@ function Login() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setMessage(error.message);
       return;
     }
 
-    navigate("/how-it-works");
-
+    if (authData?.user) {
+      setMessage("Checking status...");
+      const route = await getInitialRoute(authData.user);
+      navigate(route);
+    }
   };
 
   const handleGoogleLogin = async () => {

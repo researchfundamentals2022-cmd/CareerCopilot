@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabase";
 import { ensureProfileAndResume } from "../services/resumeBuilderApi";
+import { IoArrowBack } from "react-icons/io5";
 
 function Onboarding() {
   const navigate = useNavigate();
@@ -94,7 +95,8 @@ function Onboarding() {
       await ensureProfileAndResume(user);
 
       // 2. Save onboarding data
-      const { error } = await supabase
+      // 1. Update Onboarding Table
+      const { error: onboardingError } = await supabase
         .from("onboarding")
         .upsert(
           {
@@ -110,7 +112,17 @@ function Onboarding() {
           { onConflict: "user_id" }
         );
 
-      if (error) throw error;
+      if (onboardingError) throw onboardingError;
+
+      // 2. Sync with Profiles Table (for Dashboard Display)
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ full_name: formData.fullName })
+        .eq("id", user.id);
+
+      if (profileError) {
+        console.warn("Name sync to profiles failed, but onboarding was saved.");
+      }
 
       localStorage.setItem(
         "career_copilot_onboarding_data",
@@ -134,11 +146,11 @@ function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10">
+    <div className="min-h-screen bg-slate-50/50 px-6 py-10">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
-          <span className="inline-flex rounded-full border border-slate-200 bg-white px-4 py-1 text-sm font-medium text-[var(--color-primary)] shadow-sm">
-            Step 2 of 3
+          <span className="inline-flex rounded-full bg-violet-100 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+            Step 3 of 3
           </span>
           <h1 className="mt-4 text-4xl font-bold text-slate-900">
             Tell us a little about you
@@ -164,7 +176,7 @@ function Onboarding() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="Enter your full name"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--color-primary)]"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-[var(--color-primary)] capitalize"
                 required
               />
             </div>
@@ -259,21 +271,20 @@ function Onboarding() {
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-between">
+          <div className="mt-10 flex items-center justify-between">
             <button
               type="button"
               onClick={() => navigate("/connect-gemini")}
-              className="rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="text-sm font-medium text-slate-500 transition hover:text-[var(--color-primary)]"
             >
-              Back
+              ← Back to AI Connection
             </button>
-
             <button
               type="submit"
               disabled={loading}
               className="rounded-2xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-70"
             >
-              {loading ? "Saving..." : "Finish Setup"}
+              {loading ? "Saving Progress..." : "Save and Continue →"}
             </button>
           </div>
         </form>

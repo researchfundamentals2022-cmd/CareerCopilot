@@ -7,18 +7,32 @@ import Logo from "../../assets/Carrer_Copilot_Logo.png";
 
 function Navbar() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    const loadProfile = async (sessionUser) => {
+      if (!sessionUser) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", sessionUser.id)
+        .single();
+      if (data) setProfile(data);
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) loadProfile(session.user);
+      else setProfile(null);
     });
 
     return () => subscription.unsubscribe();
@@ -90,13 +104,13 @@ function Navbar() {
                 }`}
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-[13px] font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
-                  {user.user_metadata?.full_name?.charAt(0).toUpperCase() ||
+                  {profile?.full_name?.charAt(0).toUpperCase() ||
                     user.email?.charAt(0).toUpperCase() ||
                     "U"}
                 </div>
                 <div className="hidden max-w-[120px] flex-col items-start sm:flex">
-                  <span className="truncate text-[13px] font-bold text-slate-900 leading-none">
-                    {user.user_metadata?.full_name || "Account"}
+                  <span className="truncate text-[13px] font-bold text-slate-900 leading-none capitalize">
+                    {profile?.full_name || "Account"}
                   </span>
                 </div>
                 <FiChevronDown
@@ -109,14 +123,22 @@ function Navbar() {
               {showDropdown && (
                 <div className="absolute right-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-white/40 bg-white/80 p-1.5 shadow-[0_20px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="mb-1 rounded-xl bg-slate-50/50 px-4 py-3 border border-slate-100/50">
-                    <p className="truncate text-[13px] font-bold text-slate-900">
-                      {user.user_metadata?.full_name || "User"}
+                    <p className="truncate text-[13px] font-bold text-slate-900 capitalize">
+                      {profile?.full_name || "User"}
                     </p>
                     <p className="truncate text-[11px] font-medium text-slate-500 mt-0.5">
                       {user.email}
                     </p>
                   </div>
                   <div className="space-y-0.5">
+                    <Link
+                      to="/onboarding"
+                      onClick={() => setShowDropdown(false)}
+                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary)] hover:text-white group bg-indigo-50/30 mb-1"
+                    >
+                      <FiLayout className="text-lg text-[var(--color-primary)] transition-colors group-hover:text-white" />
+                      Edit Profile
+                    </Link>
                     <Link
                       to="/dashboard"
                       onClick={() => setShowDropdown(false)}

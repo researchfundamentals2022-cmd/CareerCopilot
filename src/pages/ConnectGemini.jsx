@@ -97,19 +97,19 @@ function ConnectGemini() {
 
   if (checkingUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-slate-600">Checking your session...</p>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-primary)] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] px-6 py-10">
-      <div className="mx-auto flex min-h-[80vh] max-w-6xl items-center">
-        <div className="grid w-full gap-10 lg:grid-cols-2">
+    <div className="min-h-screen bg-slate-50/50 px-6 py-12 md:px-12 lg:px-20">
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-12 lg:grid-cols-2">
           <div className="flex flex-col justify-center">
-            <span className="mb-4 inline-flex w-fit rounded-full border border-slate-200 bg-white px-4 py-1 text-sm font-medium text-[var(--color-primary)] shadow-sm">
-              Step 1 of 3
+            <span className="mb-4 inline-flex w-fit rounded-full bg-violet-100 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+              Step 2 of 3
             </span>
 
             <h1 className="text-4xl font-bold leading-tight text-slate-900 md:text-5xl">
@@ -196,6 +196,16 @@ function ConnectGemini() {
               >
                 {testing ? "Testing Connection..." : "Test Connection"}
               </button>
+
+              <div className="mt-4 flex flex-col items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => navigate("/how-it-works")}
+                  className="text-sm font-medium text-slate-500 transition hover:text-[var(--color-primary)] underline"
+                >
+                  ← Back to Setup Guide
+                </button>
+              </div>
             </form>
 
             {checkResult && (

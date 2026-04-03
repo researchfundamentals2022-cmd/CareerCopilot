@@ -21,11 +21,10 @@ function Signup() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate("/how-it-works");
-      } else {
-        setCheckingUser(false);
-      }
+      // We no longer auto-navigate away. 
+      // This allows users to actually see and click the "Back to Home" link 
+      // even if they are currently logged in.
+      setCheckingUser(false);
     });
   }, [navigate]);
 

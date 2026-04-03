@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../services/supabase";
 import { 
   IoPersonOutline, 
   IoSchoolOutline, 
@@ -10,6 +12,21 @@ import {
 
 function HowItWorks() {
   const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setChecking(false);
+        return;
+      }
+
+      setChecking(false);
+    };
+
+    checkStatus();
+  }, [navigate]);
 
   const features = [
     {
@@ -51,16 +68,16 @@ function HowItWorks() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 px-6 py-12 md:px-12 lg:px-20">
-      <div className="mx-auto max-w-5xl">
+    <div className="glass-morphism-bg min-h-screen px-6 py-12 md:px-12 lg:px-20">
+      <div className="relative z-10 mx-auto max-w-5xl">
         <div className="mb-12 text-center">
-          <span className="inline-flex rounded-full bg-violet-100 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
-            Getting Started
+          <span className="animate-float inline-flex rounded-full border border-violet-100 bg-white/80 px-4 py-1 text-sm font-bold text-[var(--color-primary)] shadow-sm backdrop-blur-md">
+            Step 1 of 3: Getting Started
           </span>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
+          <h1 className="mt-6 text-4xl font-bold tracking-tight text-[var(--color-text)] md:text-5xl">
             How Career Copilot Works
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[var(--color-muted)]">
             Before we begin, here is a quick overview of the information we collect and how it helps you build a winning career profile.
           </p>
         </div>
