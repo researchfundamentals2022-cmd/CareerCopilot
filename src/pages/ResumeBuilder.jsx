@@ -265,26 +265,35 @@ function ResumeBuilder() {
           if (forceFetchReadModel || latestProjectedVersion === null || latestJob.status === "completed") {
             const readModelRow = await fetchResumeReadModel(resumeId);
             if (readModelRow?.version !== undefined && readModelRow?.version !== null) {
-              setLatestProjectedVersion(readModelRow.version);
+              if (latestProjectedVersion !== readModelRow.version) {
+                 setLatestProjectedVersion(readModelRow.version);
+              }
             }
           }
           
-          setProjectionStatus("up_to_date");
-          setProjectionMessage("Preview is up to date.");
+          if (projectionStatus !== "up_to_date") {
+            setProjectionStatus("up_to_date");
+            setProjectionMessage("Preview is up to date.");
+          }
+          
           if (trackedJobId && latestJob.id === trackedJobId) {
             setActiveProjectionJobId(null);
           }
         } else if (latestJob.status === "failed") {
-          setProjectionStatus("error");
-          setProjectionMessage(
-            latestJob.error_message || "Preview update failed."
-          );
+          if (projectionStatus !== "error") {
+            setProjectionStatus("error");
+            setProjectionMessage(
+              latestJob.error_message || "Preview update failed."
+            );
+          }
           if (trackedJobId && latestJob.id === trackedJobId) {
             setActiveProjectionJobId(null);
           }
         } else {
-          setProjectionStatus("updating");
-          setProjectionMessage("Updating preview...");
+          if (projectionStatus !== "updating") {
+            setProjectionStatus("updating");
+            setProjectionMessage("Updating preview...");
+          }
         }
 
         return latestJob;
@@ -736,7 +745,7 @@ function ResumeBuilder() {
       await refreshProjectionState(activeProjectionJobId);
     };
 
-    poll();
+    // removed immediate poll() to prevent thrashing on component re-renders
     const intervalId = window.setInterval(poll, 3000);
 
     return () => {
@@ -971,18 +980,16 @@ function ResumeBuilder() {
         saveResult.projectionJobId || activeProjectionJobId || null;
 
       if (USE_ASYNC_PROJECTION && jobIdToWaitFor) {
+        // We set the status and let the background effect handle the actual polling/syncing.
+        // This prevents double-polling and thrashing.
         setProjectionStatus("updating");
         setProjectionMessage("Waiting for preview update...");
-        await waitForProjectionCompletion({
-          jobId: jobIdToWaitFor,
-          timeoutMs: 12000,
-          pollMs: 1500,
-        });
-        setActiveProjectionJobId(null);
       } else if (USE_ASYNC_PROJECTION) {
         await refreshProjectionState();
       }
 
+      // Snapshot logic - wait for latest projected version before taking snapshot
+      // We still want to verify the read model was actually updated before snapshotting
       const readModelRow = await fetchResumeReadModel(resumeId);
 
       if (!readModelRow?.document_json) {
