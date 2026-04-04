@@ -236,9 +236,19 @@ function ResumeBuilder() {
       try {
         const trackedJobId = explicitJobId ?? activeProjectionJobId;
 
-        const latestJob = trackedJobId
+        let latestJob = trackedJobId
           ? await getProjectionJobById({ jobId: trackedJobId }).catch(() => null)
           : await getLatestProjectionJob({ resumeId });
+
+        // Step 1.5: Ignore "Ghost Jobs" (pending jobs older than 60 seconds)
+        if (latestJob && latestJob.status !== "completed" && latestJob.status !== "failed") {
+          const createdAt = new Date(latestJob.created_at);
+          const now = new Date();
+          const ageInMs = now.getTime() - createdAt.getTime();
+          if (ageInMs > 60000) { // 60s expiration
+            latestJob = null; 
+          }
+        }
 
         // Step 2: Handle Job status transitions
         if (!latestJob) {
@@ -704,6 +714,9 @@ function ResumeBuilder() {
 
     ensureSectionLoaded(currentSection.key);
   }, [
+    currentSection?.key,
+    ensureSectionLoaded,
+    ensureSectionsLoaded,
     missingReviewSectionKeys.join(","),
     resumeId,
   ]);
@@ -745,14 +758,19 @@ function ResumeBuilder() {
       await refreshProjectionState(activeProjectionJobId);
     };
 
-    // removed immediate poll() to prevent thrashing on component re-renders
-    const intervalId = window.setInterval(poll, 3000);
+    // Fast polling (1.5s) when actively updating, slower (5s) when sitting idle.
+    const intervalTime = (projectionStatus === "updating" || projectionStatus === "saving" || !!activeProjectionJobId) 
+      ? 1500 
+      : 5000;
+
+    poll(); // Instant check on mount/trigger
+    const intervalId = window.setInterval(poll, intervalTime);
 
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [activeProjectionJobId, refreshProjectionState, shouldTrackProjection]);
+  }, [activeProjectionJobId, refreshProjectionState, shouldTrackProjection, projectionStatus]);
 
   const handleAddCustomSection = () => {
     const trimmed = newSectionName.trim();
