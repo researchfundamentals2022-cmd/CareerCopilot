@@ -45,7 +45,7 @@ function getMonthNumber(monthName) {
 
 function normalizeCertifications(value) {
   if (!Array.isArray(value) || value.length === 0) {
-    return [createEmptyCertificationItem()];
+    return [];
   }
 
   const normalized = value
@@ -59,7 +59,7 @@ function normalizeCertifications(value) {
     }))
     .filter(Boolean);
 
-  return normalized.length > 0 ? normalized : [createEmptyCertificationItem()];
+  return normalized;
 }
 
 function isValidUrl(url) {
@@ -168,10 +168,7 @@ function CertificationsForm({ value, setResumeData, onOpenAIModal }) {
       (item) => item.clientKey !== clientKey
     );
 
-    saveCertifications(
-      updatedItems.length > 0 ? updatedItems : [createEmptyCertificationItem()]
-    );
-
+    saveCertifications(updatedItems);
     setTouched(true);
   };
 
@@ -224,8 +221,27 @@ function CertificationsForm({ value, setResumeData, onOpenAIModal }) {
         </div>
 
         <div className="px-6 py-6 sm:px-8 sm:py-8">
-          <div className="space-y-6">
-            {certifications.map((item, index) => {
+          {certifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-12 text-center transition-all hover:bg-slate-50">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-100 mb-4">
+                <Award className="text-slate-400" size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">No Certifications Added</h3>
+              <p className="mt-2 max-w-[280px] text-sm text-slate-500 leading-relaxed">
+                Add certifications, credentials, or courses that strengthen your profile.
+              </p>
+              <button
+                type="button"
+                onClick={addCertification}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95 shadow-md active:scale-95"
+              >
+                <Plus size={18} />
+                Add Your First Certification
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {certifications.map((item, index) => {
               const cardErrors = certificationErrors[index] || {};
 
               return (
@@ -244,16 +260,14 @@ function CertificationsForm({ value, setResumeData, onOpenAIModal }) {
                       </p>
                     </div>
 
-                    {certifications.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeCertification(item.clientKey)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
-                        aria-label={`Remove certification ${index + 1}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeCertification(item.clientKey)}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                      aria-label={`Remove certification ${index + 1}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -469,17 +483,20 @@ function CertificationsForm({ value, setResumeData, onOpenAIModal }) {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={addCertification}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
-            >
-              <Plus size={16} />
-              Add Certification
-            </button>
+            {certifications.length > 0 && (
+              <button
+                type="button"
+                onClick={addCertification}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+              >
+                <Plus size={16} />
+                Add Certification
+              </button>
+            )}
 
             {touched && totalErrors > 0 && (
               <p className="text-sm font-medium text-red-600">

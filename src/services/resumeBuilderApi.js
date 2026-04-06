@@ -1315,13 +1315,15 @@ export const saveResumeSectionByKey = async ({
   });
 
   if (regenerateReadModel) {
-    await upsertResumeReadModel({
+    return upsertResumeReadModel({
       resumeId,
       userId,
       resumeData,
       customSections,
     });
   }
+  
+  return { savedSectionKey: sectionKey };
 };
 
 export const saveResumeSectionsBatch = async ({
@@ -1353,12 +1355,18 @@ export const saveResumeSectionsBatch = async ({
   );
 
   if (regenerateReadModel) {
-    await upsertResumeReadModel({
+    const result = await upsertResumeReadModel({
       resumeId,
       userId,
       resumeData,
       customSections,
     });
+    
+    return { 
+      savedSectionKeys: uniqueKeys,
+      version: result?.version,
+      documentJson: result?.documentJson
+    };
   }
 
   return { savedSectionKeys: uniqueKeys };

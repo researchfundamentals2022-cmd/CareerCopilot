@@ -57,7 +57,7 @@ export async function requestResumeProjection({ resumeId, userId }) {
     .insert({
       resume_id: resumeId,
       user_id: userId,
-      status: "pending"
+      status: "queued"
     })
     .select()
     .single();

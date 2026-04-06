@@ -172,7 +172,8 @@ export default function ResumePreview({
     return true;
   }, [safeResumeData]);
 
-  const exportInProgress = isPreparingPdf || isPreparingWord || isPrinting || isSyncing;
+  // Export is blocked only by active generation/printing, not by background syncing
+  const exportInProgress = isPreparingPdf || isPreparingWord || isPrinting;
 
   const scaledPreviewWidth = Math.round(PAPER_WIDTH * viewScale);
   const scaledPreviewHeight = Math.round(PAPER_HEIGHT * viewScale);
@@ -505,9 +506,7 @@ export default function ResumePreview({
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <IoDownload size={18} />
-              {isSyncing 
-                ? "Syncing Data..." 
-                : (isPreparingPdf || isPrinting ? "Preparing PDF..." : "Download PDF")}
+              {isPreparingPdf || isPrinting ? "Preparing PDF..." : "Download PDF"}
             </button>
 
             <button
@@ -526,13 +525,22 @@ export default function ResumePreview({
       <section className="min-w-0 flex-1">
         <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-4 shadow-sm sm:p-6 lg:p-10">
           <div className="no-print mb-8 flex flex-col gap-4 border-b border-slate-200/60 pb-8 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="relative">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-muted)]">
                 Standard Viewport
               </p>
               <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-800">
                 {TEMPLATES.find((item) => item.id === template)?.name || "Classic ATS"}
               </h3>
+              
+              {isSyncing && (
+                <div className="absolute -top-6 left-0 flex items-center gap-2">
+                   <div className="h-1.5 w-1.5 animate-ping rounded-full bg-indigo-500" />
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+                     Synchronizing sections...
+                   </span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3">

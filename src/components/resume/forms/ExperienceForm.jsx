@@ -33,7 +33,7 @@ function getYearOptions() {
 
 function normalizeExperience(value) {
   if (!Array.isArray(value) || value.length === 0) {
-    return [createEmptyExperienceItem()];
+    return [];
   }
 
   const normalized = value
@@ -45,7 +45,7 @@ function normalizeExperience(value) {
     }))
     .filter(Boolean);
 
-  return normalized.length > 0 ? normalized : [createEmptyExperienceItem()];
+  return normalized;
 }
 
 function getMonthIndex(month) {
@@ -212,7 +212,7 @@ function ExperienceForm({ value, setResumeData, onOpenAIModal, showValidationErr
 
   const removeExperience = (clientKey) => {
     const updated = experiences.filter((item) => item.clientKey !== clientKey);
-    saveExperiences(updated.length ? updated : [createEmptyExperienceItem()]);
+    saveExperiences(updated);
     setTouched(true);
   };
 
@@ -265,8 +265,27 @@ function ExperienceForm({ value, setResumeData, onOpenAIModal, showValidationErr
         </div>
 
         <div className="px-6 py-6 sm:px-8 sm:py-8">
-          <div className="space-y-6">
-            {experiences.map((item, index) => {
+          {experiences.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-12 text-center transition-all hover:bg-slate-50">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-100 mb-4">
+                <Briefcase className="text-slate-400" size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">No Experience Added</h3>
+              <p className="mt-2 max-w-[280px] text-sm text-slate-500 leading-relaxed">
+                Add internships, jobs, or volunteer work to show your professional background.
+              </p>
+              <button
+                type="button"
+                onClick={addExperience}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95 shadow-md active:scale-95"
+              >
+                <Plus size={18} />
+                Add Your First Experience
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {experiences.map((item, index) => {
               const cardErrors = errors[index] || {};
 
               return (
@@ -285,16 +304,14 @@ function ExperienceForm({ value, setResumeData, onOpenAIModal, showValidationErr
                       </p>
                     </div>
 
-                    {experiences.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeExperience(item.clientKey)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                      >
-                        <Trash2 size={15} />
-                        Remove
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeExperience(item.clientKey)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                    >
+                      <Trash2 size={15} />
+                      Remove
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -583,16 +600,19 @@ function ExperienceForm({ value, setResumeData, onOpenAIModal, showValidationErr
               );
             })}
           </div>
+          )}
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={addExperience}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
-            >
-              <Plus size={16} />
-              Add Experience
-            </button>
+            {experiences.length > 0 && (
+              <button
+                type="button"
+                onClick={addExperience}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+              >
+                <Plus size={16} />
+                Add Experience
+              </button>
+            )}
 
             {(touched || showValidationErrors) && totalErrors > 0 && (
               <p className="text-sm font-medium text-red-600">

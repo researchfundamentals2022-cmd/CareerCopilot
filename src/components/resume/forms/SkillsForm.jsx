@@ -107,7 +107,7 @@ const createEmptySkillRow = () => ({
 
 function normalizeSkills(value) {
   if (!Array.isArray(value) || value.length === 0) {
-    return [createEmptySkillRow()];
+    return [];
   }
 
   const normalized = value
@@ -167,10 +167,12 @@ function normalizeSkills(value) {
     })
     .filter(Boolean);
 
-  return normalized.length > 0 ? normalized : [createEmptySkillRow()];
+  return normalized;
 }
 
 function validateSkills(rows) {
+  if (rows.length === 0) return "";
+
   const validRows = rows.filter((row) => {
     const effectiveCategory =
       row.category === CUSTOM_CATEGORY_VALUE
@@ -183,7 +185,7 @@ function validateSkills(rows) {
   });
 
   if (validRows.length === 0) {
-    return "Please add at least one category with at least one skill.";
+    return "Please complete your skill entries or remove empty ones.";
   }
 
   return "";
@@ -245,7 +247,7 @@ function SkillsForm({ value, setResumeData, showValidationErrors = false }) {
 
   const removeSkillRow = (clientKey) => {
     const updatedRows = rows.filter((row) => row.clientKey !== clientKey);
-    syncRows(updatedRows.length > 0 ? updatedRows : [createEmptySkillRow()], true);
+    syncRows(updatedRows, true);
     setTouched(true);
   };
 
@@ -388,219 +390,245 @@ function SkillsForm({ value, setResumeData, showValidationErrors = false }) {
         </div>
 
         <div className="px-6 py-6 sm:px-8 sm:py-8">
-          <div className="space-y-5">
-            {rows.map((row) => {
-              const effectiveCategory =
-                row.category === CUSTOM_CATEGORY_VALUE
-                  ? row.customCategory.trim()
-                  : row.category;
+          {rows.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-slate-200 bg-slate-50/50 py-12 text-center transition-colors hover:bg-slate-50">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
+                <Plus className="text-[var(--color-primary)]" size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">
+                No Skills Added Yet
+              </h3>
+              <p className="mt-2 max-w-[280px] leading-relaxed text-sm text-slate-500">
+                Add your technical and soft skills to showcase your expertise.
+              </p>
+              <button
+                type="button"
+                onClick={addSkillRow}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition shadow-md hover:opacity-95 active:scale-95"
+              >
+                <Plus size={18} />
+                Add Your First Skill
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-5">
+                {rows.map((row) => {
+                  const effectiveCategory =
+                    row.category === CUSTOM_CATEGORY_VALUE
+                      ? row.customCategory.trim()
+                      : row.category;
 
-              const suggestions =
-                row.category &&
-                row.category !== CUSTOM_CATEGORY_VALUE &&
-                SKILL_SUGGESTIONS[row.category]
-                  ? SKILL_SUGGESTIONS[row.category]
-                  : [];
+                  const suggestions =
+                    row.category &&
+                    row.category !== CUSTOM_CATEGORY_VALUE &&
+                    SKILL_SUGGESTIONS[row.category]
+                      ? SKILL_SUGGESTIONS[row.category]
+                      : [];
 
-              return (
-                <div
-                  key={row.clientKey}
-                  className="rounded-2xl border border-slate-200 bg-[var(--color-bg-alt)] p-5 sm:p-6"
-                >
-                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-start">
-                    <div>
-                      <label
-                        htmlFor={`category-${row.clientKey}`}
-                        className="mb-2 block text-sm font-semibold text-slate-800"
-                      >
-                        Category
-                        <span className="ml-1 text-red-600">*</span>
-                      </label>
+                  return (
+                    <div
+                      key={row.clientKey}
+                      className="rounded-2xl border border-slate-200 bg-[var(--color-bg-alt)] p-5 sm:p-6"
+                    >
+                      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-start">
+                        <div>
+                          <label
+                            htmlFor={`category-${row.clientKey}`}
+                            className="mb-2 block text-sm font-semibold text-slate-800"
+                          >
+                            Category
+                            <span className="ml-1 text-red-600">*</span>
+                          </label>
 
-                      <select
-                        id={`category-${row.clientKey}`}
-                        value={row.category}
-                        onChange={(e) =>
-                          handleCategoryChange(row.clientKey, e.target.value)
-                        }
-                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
-                      >
-                        <option value="">Select category</option>
-                        {SKILL_CATEGORIES.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                        <option value={CUSTOM_CATEGORY_VALUE}>
-                          Custom Category
-                        </option>
-                      </select>
+                          <select
+                            id={`category-${row.clientKey}`}
+                            value={row.category}
+                            onChange={(e) =>
+                              handleCategoryChange(row.clientKey, e.target.value)
+                            }
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
+                          >
+                            <option value="">Select category</option>
+                            {SKILL_CATEGORIES.map((category) => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                            <option value={CUSTOM_CATEGORY_VALUE}>
+                              Custom Category
+                            </option>
+                          </select>
 
-                      {row.category === CUSTOM_CATEGORY_VALUE && (
-                        <input
-                          type="text"
-                          value={row.customCategory}
-                          onChange={(e) =>
-                            handleCustomCategoryChange(row.clientKey, e.target.value)
-                          }
-                          onBlur={handleCustomCategoryBlur}
-                          placeholder="Enter custom category"
-                          className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
-                        />
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-800">
-                        Skills
-                        <span className="ml-1 text-red-600">*</span>
-                      </label>
-
-                      {row.category ? (
-                        <>
-                          {suggestions.length > 0 ? (
-                            <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-4">
-                              {suggestions.map((skill) => {
-                                const selected = row.skills.includes(skill);
-
-                                return (
-                                  <button
-                                    key={skill}
-                                    type="button"
-                                    onClick={() => toggleSkill(row.clientKey, skill)}
-                                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                                      selected
-                                        ? "border-[var(--color-primary)] bg-[var(--color-primary)]/6 text-[var(--color-primary)]"
-                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    {skill}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
-                              Add custom skills for this category.
-                            </div>
-                          )}
-
-                          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                          {row.category === CUSTOM_CATEGORY_VALUE && (
                             <input
                               type="text"
-                              value={row.customSkill}
+                              value={row.customCategory}
                               onChange={(e) =>
-                                handleCustomSkillChange(row.clientKey, e.target.value)
+                                handleCustomCategoryChange(row.clientKey, e.target.value)
                               }
-                              onKeyDown={(e) =>
-                                handleCustomSkillKeyDown(e, row.clientKey)
-                              }
-                              placeholder="Add other skill"
-                              className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
+                              onBlur={handleCustomCategoryBlur}
+                              placeholder="Enter custom category"
+                              className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
                             />
-                            <button
-                              type="button"
-                              onClick={() => addCustomSkill(row.clientKey)}
-                              className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] bg-white px-4 text-sm font-medium text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/5"
-                            >
-                              Add
-                            </button>
-                          </div>
+                          )}
+                        </div>
 
-                          {(effectiveCategory || row.skills.length > 0) && (
-                            <div className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                {effectiveCategory || "Category"}
-                              </p>
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-slate-800">
+                            Skills
+                            <span className="ml-1 text-red-600">*</span>
+                          </label>
 
-                              {row.skills.length > 0 ? (
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {row.skills.map((skill) => (
-                                    <span
-                                      key={skill}
-                                      className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
-                                    >
-                                      {skill}
+                          {row.category ? (
+                            <>
+                              {suggestions.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                                  {suggestions.map((skill) => {
+                                    const selected = row.skills.includes(skill);
+
+                                    return (
                                       <button
+                                        key={skill}
                                         type="button"
-                                        onClick={() =>
-                                          removeSelectedSkill(row.clientKey, skill)
-                                        }
-                                        className="text-slate-500 hover:text-red-500"
+                                        onClick={() => toggleSkill(row.clientKey, skill)}
+                                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                                          selected
+                                            ? "border-[var(--color-primary)] bg-[var(--color-primary)]/6 text-[var(--color-primary)]"
+                                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                        }`}
                                       >
-                                        ×
+                                        {skill}
                                       </button>
-                                    </span>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               ) : (
-                                <p className="mt-2 text-sm text-slate-500">
-                                  No skills selected yet.
-                                </p>
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
+                                  Add custom skills for this category.
+                                </div>
                               )}
+
+                              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                                <input
+                                  type="text"
+                                  value={row.customSkill}
+                                  onChange={(e) =>
+                                    handleCustomSkillChange(row.clientKey, e.target.value)
+                                  }
+                                  onKeyDown={(e) =>
+                                    handleCustomSkillKeyDown(e, row.clientKey)
+                                  }
+                                  placeholder="Add other skill"
+                                  className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => addCustomSkill(row.clientKey)}
+                                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] bg-white px-4 text-sm font-medium text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/5"
+                                >
+                                  Add
+                                </button>
+                              </div>
+
+                              {(effectiveCategory || row.skills.length > 0) && (
+                                <div className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    {effectiveCategory || "Category"}
+                                  </p>
+
+                                  {row.skills.length > 0 ? (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {row.skills.map((skill) => (
+                                        <span
+                                          key={skill}
+                                          className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                                        >
+                                          {skill}
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              removeSelectedSkill(row.clientKey, skill)
+                                            }
+                                            className="text-slate-500 hover:text-red-500"
+                                          >
+                                            ×
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-slate-500">
+                                      No skills selected yet.
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
+                              Select a category first to view or add skills.
                             </div>
                           )}
-                        </>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
-                          Select a category first to view or add skills.
                         </div>
-                      )}
+
+                        <div className="lg:pt-8">
+                          <button
+                            type="button"
+                            onClick={() => removeSkillRow(row.clientKey)}
+                            className="inline-flex h-12 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 text-red-600 transition hover:bg-red-100"
+                            aria-label="Remove skill row"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="lg:pt-8">
-                      <button
-                        type="button"
-                        onClick={() => removeSkillRow(row.clientKey)}
-                        className="inline-flex h-12 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 text-red-600 transition hover:bg-red-100"
-                        aria-label="Remove skill row"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-5">
-            <button
-              type="button"
-              onClick={addSkillRow}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
-            >
-              <Plus size={16} />
-              Add Skill
-            </button>
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <label className="text-sm font-semibold text-slate-800">
-                  Skills Summary
-                  <span className="ml-1 text-red-600">*</span>
-                </label>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Add at least one category with one or more selected skills.
-                </p>
+                  );
+                })}
               </div>
 
-              <span className="text-xs font-medium text-slate-500">
-                {totalSelectedSkills} selected
-              </span>
-            </div>
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={addSkillRow}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-95 shadow-sm"
+                >
+                  <Plus size={16} />
+                  Add Another Category
+                </button>
+              </div>
 
-            {error ? (
-              <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
-            ) : (
-              <p className="mt-3 text-sm leading-6 text-slate-500">
-                Choose only the skills that match your profile and target role.
-              </p>
-            )}
-          </div>
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-[var(--color-bg-alt)] p-5 sm:p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-800">
+                      Skills Summary
+                    </label>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Review your skill categories before moving to the next section.
+                    </p>
+                  </div>
+
+                  <span className="text-xs font-medium text-slate-500">
+                    {totalSelectedSkills} selected
+                  </span>
+                </div>
+
+                {error ? (
+                  <p className="mt-4 text-sm font-medium text-red-600">
+                    ⚠️ {error}
+                  </p>
+                ) : (
+                  <p className="mt-4 text-sm leading-6 text-slate-500 italic">
+                    All good! Your skills are ready for the resume.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
+
       </div>
     </section>
   );

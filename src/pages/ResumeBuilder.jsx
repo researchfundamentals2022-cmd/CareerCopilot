@@ -26,6 +26,7 @@ function ResumeBuilder() {
   const navigate = useNavigate();
   const hasInitializedRef = useRef(false);
   const backgroundSaveQueueRef = useRef(Promise.resolve());
+  const lastProjectionRequestTimeRef = useRef(0);
 
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
@@ -44,8 +45,7 @@ function ResumeBuilder() {
   const [loadingSections, setLoadingSections] = useState(new Set());
   const [dirtySections, setDirtySections] = useState(new Set());
 
-  const USE_ASYNC_PROJECTION =
-    import.meta.env.VITE_USE_ASYNC_PROJECTION === "true";
+  const USE_ASYNC_PROJECTION = false; // Disabled to eliminate overhead and hangs
 
   const [projectionStatus, setProjectionStatus] = useState("idle");
   const [projectionMessage, setProjectionMessage] = useState("");
@@ -124,9 +124,7 @@ function ResumeBuilder() {
   const shouldTrackProjection =
     USE_ASYNC_PROJECTION &&
     !!resumeId &&
-    (projectionStatus === "saving" ||
-      projectionStatus === "updating" ||
-      !!activeProjectionJobId);
+    !!activeProjectionJobId;
 
   const getCurrentStatus = () => {
     try {
@@ -235,18 +233,32 @@ function ResumeBuilder() {
 
       try {
         const trackedJobId = explicitJobId ?? activeProjectionJobId;
+        if (!trackedJobId) {
+          // If no specific job is tracked, we only update the read-model state
+          // and don't perform any polling.
+          if (forceFetchReadModel || latestProjectedVersion === null) {
+            const readModelRow = await fetchResumeReadModel(resumeId);
+            if (readModelRow?.version !== undefined && readModelRow?.version !== null) {
+              setLatestProjectedVersion(readModelRow.version);
+              setProjectionStatus("up_to_date");
+              setProjectionMessage("Preview is up to date.");
+            }
+          } else {
+             setProjectionStatus("up_to_date");
+          }
+          return null;
+        }
 
-        let latestJob = trackedJobId
-          ? await getProjectionJobById({ jobId: trackedJobId }).catch(() => null)
-          : await getLatestProjectionJob({ resumeId });
+        let latestJob = await getProjectionJobById({ jobId: trackedJobId }).catch(() => null);
 
         // Step 1.5: Ignore "Ghost Jobs" (pending jobs older than 60 seconds)
         if (latestJob && latestJob.status !== "completed" && latestJob.status !== "failed") {
-          const createdAt = new Date(latestJob.created_at);
+          const createdAt = new Date(latestJob.created_at || Date.now());
           const now = new Date();
           const ageInMs = now.getTime() - createdAt.getTime();
           if (ageInMs > 60000) { // 60s expiration
             latestJob = null; 
+            setActiveProjectionJobId(null);
           }
         }
 
@@ -286,7 +298,7 @@ function ResumeBuilder() {
             setProjectionMessage("Preview is up to date.");
           }
           
-          if (trackedJobId && latestJob.id === trackedJobId) {
+          if (trackedJobId && String(latestJob.id) === String(trackedJobId)) {
             setActiveProjectionJobId(null);
           }
         } else if (latestJob.status === "failed") {
@@ -296,7 +308,7 @@ function ResumeBuilder() {
               latestJob.error_message || "Preview update failed."
             );
           }
-          if (trackedJobId && latestJob.id === trackedJobId) {
+          if (trackedJobId && String(latestJob.id) === String(trackedJobId)) {
             setActiveProjectionJobId(null);
           }
         } else {
@@ -367,44 +379,27 @@ function ResumeBuilder() {
             background ? "Saving in background..." : "Saving changes..."
           );
 
-          await saveResumeSectionsBatch({
+          const syncResult = await saveResumeSectionsBatch({
             sectionKeys: keysToSave,
             resumeId,
             userId,
             resumeData,
             customSections,
-            regenerateReadModel: true, // Always do a direct sync update first
+            regenerateReadModel: true, // Always do a direct sync update
           });
 
           clearSavedDirtyKeys(keysToSave);
 
-          setProjectionStatus("updating");
-          setProjectionMessage(
-            background
-              ? "Saved. Preview updating..."
-              : "Changes saved. Preview updating..."
-          );
-
-          let projectionJobId = null;
-
-          // Attempt async projection only as a secondary enhancement
-          try {
-            const projectionResult = await requestResumeProjection({
-              resumeId,
-              userId,
-            });
-
-            projectionJobId = projectionResult?.job?.id ?? null;
-
-            if (projectionJobId) {
-              setActiveProjectionJobId(projectionJobId);
-            }
-          } catch (projectionError) {
-            // Silently fall back to the direct sync update already performed
-            console.warn("Background projection queue unavailable, using direct sync.");
+          // IMMEDIATE FEEDBACK: Update version from the sync result
+          if (syncResult?.version) {
+            setLatestProjectedVersion(syncResult.version);
           }
 
-          return { ok: true, projectionJobId };
+          // SET STATUS TO UP_TO_DATE IMMEDIATELY
+          setProjectionStatus("up_to_date");
+          setProjectionMessage("Preview is up to date.");
+
+          return { ok: true, projectionJobId: null };
         }
 
         await saveResumeSectionsBatch({
@@ -740,11 +735,28 @@ function ResumeBuilder() {
   useEffect(() => {
     if (!resumeId || currentSection?.key !== "review") return;
     
-    // Initial fetch to sync preview state on entry.
-    refreshProjectionState(null, { forceFetchReadModel: true });
-    // We strictly use ONLY currentSection.key as the trigger to ensure 
-    // it only runs once per visit to the review page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Check for latest job once on entry.
+    const syncOnReviewEntry = async () => {
+      const { data: latestJob } = await supabase
+        .from("resume_projection_jobs")
+        .select("id, status")
+        .eq("resume_id", resumeId)
+        .order("id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestJob && (latestJob.status === "queued" || latestJob.status === "processing")) {
+        setActiveProjectionJobId(latestJob.id);
+      }
+      
+      // Fetch the latest read model to ensure local state is most recent
+      const readModel = await fetchResumeReadModel(resumeId);
+      if (readModel?.version) {
+        setLatestProjectedVersion(readModel.version);
+      }
+    };
+
+    syncOnReviewEntry();
   }, [currentSection?.key, resumeId]);
 
   // Optimized polling for projection state.
@@ -1056,6 +1068,8 @@ function ResumeBuilder() {
 
     if (key === "education") {
       const education = Array.isArray(resumeData.education) ? resumeData.education : [];
+      if (education.length === 0) return true;
+
       const validRows = education.filter(
         (item) =>
           item.category?.trim() &&
@@ -1072,7 +1086,7 @@ function ResumeBuilder() {
 
     if (key === "experience") {
       const experience = Array.isArray(resumeData.experience) ? resumeData.experience : [];
-      if (experience.length === 0) return false;
+      if (experience.length === 0) return true;
       
       const validRows = experience.filter(
         (item) =>
@@ -1091,7 +1105,7 @@ function ResumeBuilder() {
 
     if (key === "projects") {
       const projects = Array.isArray(resumeData.projects) ? resumeData.projects : [];
-      if (projects.length === 0) return false;
+      if (projects.length === 0) return true;
 
       const validRows = projects.filter(
         (item) =>
@@ -1109,6 +1123,8 @@ function ResumeBuilder() {
 
     if (key === "skills") {
       const skills = Array.isArray(resumeData.skills) ? resumeData.skills : [];
+      if (skills.length === 0) return true;
+
       const validRows = skills.filter(
         (item) =>
           item.category?.trim() !== "" &&
@@ -1126,6 +1142,8 @@ function ResumeBuilder() {
 
     if (key === "achievements") {
       const achievements = Array.isArray(resumeData.achievements) ? resumeData.achievements : [];
+      if (achievements.length === 0) return true;
+
       const validRows = achievements.filter(
         (item) =>
           item.category?.trim() &&
@@ -1140,6 +1158,8 @@ function ResumeBuilder() {
 
     if (key === "certifications") {
       const certifications = Array.isArray(resumeData.certifications) ? resumeData.certifications : [];
+      if (certifications.length === 0) return true;
+
       const validRows = certifications.filter(
         (item) =>
           item.name?.trim() &&
@@ -1153,7 +1173,7 @@ function ResumeBuilder() {
 
     if (key.startsWith("custom_")) {
       const customData = Array.isArray(resumeData[key]) ? resumeData[key] : [];
-      if (customData.length === 0) return false;
+      if (customData.length === 0) return true;
       
       const validRows = customData.filter(
         (item) =>
@@ -1597,34 +1617,22 @@ function ResumeBuilder() {
 
             <div ref={formContainerRef} className={`rounded-[24px] border border-slate-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.06)] md:rounded-[32px] ${isShaking ? "animate-shake" : ""}`}>
               {currentSection?.key === "review" ? (
-                isReviewSyncing ? (
-                  <div className="flex min-h-[400px] flex-col items-center justify-center p-8 text-center">
-                    <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-primary)] border-t-transparent" />
-                    <p className="text-lg font-semibold text-slate-800">
-                      Preparing all resume sections...
-                    </p>
-                    <p className="mt-2 text-sm text-[var(--color-muted)]">
-                      Ensuring your high-quality preview is complete.
-                    </p>
-                  </div>
-                ) : (
-                  <ResumePreview
-                    resumeId={resumeId}
-                    isSyncing={isReviewSyncing || loadingSections.size > 0}
-                    resumeData={{
-                      ...resumeData,
-                      customSections: customSections.map((cs) => ({
-                        key: cs.key,
-                        label: cs.label,
-                        content: resumeData[cs.key] || [],
-                      })),
-                    }}
-                    projectionStatus={projectionStatus}
-                    projectionMessage={projectionMessage}
-                    latestProjectedVersion={latestProjectedVersion}
-                    onTemplateChange={handleTemplateChange}
-                  />
-                )
+                <ResumePreview
+                  resumeId={resumeId}
+                  isSyncing={loadingSections.size > 0} // Syncing is now just a subtle indicator
+                  resumeData={{
+                    ...resumeData,
+                    customSections: customSections.map((cs) => ({
+                      key: cs.key,
+                      label: cs.label,
+                      content: resumeData[cs.key] || [],
+                    })),
+                  }}
+                  projectionStatus={projectionStatus}
+                  projectionMessage={projectionMessage}
+                  latestProjectedVersion={latestProjectedVersion}
+                  onTemplateChange={handleTemplateChange}
+                />
               ) : isCurrentSectionLoading ? (
                 <div className="flex min-h-[240px] items-center justify-center">
                   <p className="text-sm font-medium text-[var(--color-muted)]">

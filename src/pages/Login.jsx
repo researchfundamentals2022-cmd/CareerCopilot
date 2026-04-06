@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabase";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
+import { getInitialRoute } from "../utils/auth";
 
 
 function Login() {
@@ -17,30 +18,12 @@ function Login() {
   const [message, setMessage] = useState("");
   const [checkingUser, setCheckingUser] = useState(true);
 
-  const getInitialRoute = async (user) => {
-    if (!user) return "/how-it-works";
-    
-    try {
-      const { data: onboardingData } = await supabase
-        .from("onboarding")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-        
-      if (onboardingData) return "/dashboard";
-    } catch (err) {
-      // Not onboarded
-    }
-    return "/how-it-works";
-  };
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        // We no longer auto-navigate away. 
-        // This allows users to actually see and click the "Back to Home" link 
-        // even if they are currently logged in.
-        setCheckingUser(false);
+        const route = await getInitialRoute(session.user);
+        navigate(route, { replace: true });
       } else {
         setCheckingUser(false);
       }
