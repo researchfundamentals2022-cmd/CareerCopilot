@@ -293,12 +293,20 @@ function GeminiModal({
     if (!isOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    window.lenis?.stop();
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.lenis?.start();
     };
   }, [isOpen]);
+
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -477,6 +485,7 @@ function GeminiModal({
     }
   };
 
+
   const handleCopy = async () => {
     if (!generatedContent) return;
 
@@ -506,7 +515,8 @@ function GeminiModal({
   const badgeContext = getContextBadge(aiContext);
 
   const modalUI = (
-    <div className="fixed inset-0 z-[999999] overflow-y-auto bg-slate-950/45 backdrop-blur-[3px]">
+    <div data-lenis-prevent className="fixed inset-0 z-[999999] overflow-y-auto bg-slate-950/45 backdrop-blur-[3px]">
+
       <div className="flex min-h-screen items-start justify-center p-4 sm:p-6">
         <div className="my-4 w-full max-w-4xl rounded-[26px] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
@@ -606,19 +616,24 @@ function GeminiModal({
                     </CompactField>
 
                     <CompactField label="Tone">
-                      <select
-                        value={summaryForm.tone}
-                        onChange={(e) =>
-                          handleSummaryFieldChange("tone", e.target.value)
-                        }
-                        className={inputClassName()}
-                      >
-                        {SUMMARY_TONE_OPTIONS.map((tone) => (
-                          <option key={tone} value={tone}>
-                            {tone}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                        <div className="flex gap-2 px-1">
+                          {SUMMARY_TONE_OPTIONS.map((tone) => (
+                            <button
+                              key={tone}
+                              type="button"
+                              onClick={() => handleSummaryFieldChange("tone", tone)}
+                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                                summaryForm.tone === tone
+                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {tone}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </CompactField>
                   </div>
                 </div>
@@ -712,20 +727,26 @@ function GeminiModal({
                     </CompactField>
 
                     <CompactField label="Tone">
-                      <select
-                        value={projectForm.tone}
-                        onChange={(e) =>
-                          handleProjectFieldChange("tone", e.target.value)
-                        }
-                        className={inputClassName()}
-                      >
-                        {PROJECT_TONE_OPTIONS.map((tone) => (
-                          <option key={tone} value={tone}>
-                            {tone}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                        <div className="flex gap-2 px-1">
+                          {PROJECT_TONE_OPTIONS.map((tone) => (
+                            <button
+                              key={tone}
+                              type="button"
+                              onClick={() => handleProjectFieldChange("tone", tone)}
+                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                                projectForm.tone === tone
+                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {tone}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </CompactField>
+
                   </div>
                 </div>
               ) : isExperienceSection ? (
@@ -826,20 +847,26 @@ function GeminiModal({
                     </CompactField>
 
                     <CompactField label="Tone">
-                      <select
-                        value={experienceForm.tone}
-                        onChange={(e) =>
-                          handleExperienceFieldChange("tone", e.target.value)
-                        }
-                        className={inputClassName()}
-                      >
-                        {EXPERIENCE_TONE_OPTIONS.map((tone) => (
-                          <option key={tone} value={tone}>
-                            {tone}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                        <div className="flex gap-2 px-1">
+                          {EXPERIENCE_TONE_OPTIONS.map((tone) => (
+                            <button
+                              key={tone}
+                              type="button"
+                              onClick={() => handleExperienceFieldChange("tone", tone)}
+                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                                experienceForm.tone === tone
+                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {tone}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </CompactField>
+
                   </div>
                 </div>
               ) : isCertificationsSection ? (
@@ -905,20 +932,26 @@ function GeminiModal({
                     </CompactField>
 
                     <CompactField label="Tone">
-                      <select
-                        value={certificationForm.tone}
-                        onChange={(e) =>
-                          handleCertificationFieldChange("tone", e.target.value)
-                        }
-                        className={inputClassName()}
-                      >
-                        {CERTIFICATION_TONE_OPTIONS.map((tone) => (
-                          <option key={tone} value={tone}>
-                            {tone}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                        <div className="flex gap-2 px-1">
+                          {CERTIFICATION_TONE_OPTIONS.map((tone) => (
+                            <button
+                              key={tone}
+                              type="button"
+                              onClick={() => handleCertificationFieldChange("tone", tone)}
+                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                                certificationForm.tone === tone
+                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {tone}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </CompactField>
+
                   </div>
                 </div>
               ) : isAchievementsSection ? (
@@ -969,20 +1002,26 @@ function GeminiModal({
                     </CompactField>
 
                     <CompactField label="Tone">
-                      <select
-                        value={achievementForm.tone}
-                        onChange={(e) =>
-                          handleAchievementFieldChange("tone", e.target.value)
-                        }
-                        className={inputClassName()}
-                      >
-                        {ACHIEVEMENT_TONE_OPTIONS.map((tone) => (
-                          <option key={tone} value={tone}>
-                            {tone}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                        <div className="flex gap-2 px-1">
+                          {ACHIEVEMENT_TONE_OPTIONS.map((tone) => (
+                            <button
+                              key={tone}
+                              type="button"
+                              onClick={() => handleAchievementFieldChange("tone", tone)}
+                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                                achievementForm.tone === tone
+                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {tone}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </CompactField>
+
                   </div>
 
                   <CompactField label="Description Input" required>
@@ -1029,20 +1068,26 @@ function GeminiModal({
                   </div>
 
                   <CompactField label="Tone">
-                    <select
-                      value={customForm.tone}
-                      onChange={(e) =>
-                        handleCustomFieldChange("tone", e.target.value)
-                      }
-                      className={inputClassName()}
-                    >
-                      {CUSTOM_TONE_OPTIONS.map((tone) => (
-                        <option key={tone} value={tone}>
-                          {tone}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                      <div className="flex gap-2 px-1">
+                        {CUSTOM_TONE_OPTIONS.map((tone) => (
+                          <button
+                            key={tone}
+                            type="button"
+                            onClick={() => handleCustomFieldChange("tone", tone)}
+                            className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                              customForm.tone === tone
+                                ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {tone}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </CompactField>
+
 
                   <CompactField label="Description Input" required>
                     <textarea

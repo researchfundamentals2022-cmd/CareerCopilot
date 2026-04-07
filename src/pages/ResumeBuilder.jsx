@@ -1319,7 +1319,8 @@ function ResumeBuilder() {
               />
             </div>
 
-            <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+            <div data-lenis-prevent className="mt-4 flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+
               {allSections.map((section, index) => {
                 const isActive = index === currentStep;
                 const isCustom = section.type === "custom";
@@ -1408,7 +1409,8 @@ function ResumeBuilder() {
 
         <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="hidden xl:block">
-            <div className="sticky top-[110px] max-h-[calc(100vh-130px)] overflow-y-auto rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div data-lenis-prevent className="sticky top-[110px] max-h-[calc(100vh-130px)] overflow-y-auto rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm scrollbar-hide">
+
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
                   Sections

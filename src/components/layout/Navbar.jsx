@@ -97,19 +97,27 @@ function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className={`flex items-center gap-2.5 rounded-full border bg-white/80 p-1.5 pr-4 text-sm font-semibold text-slate-700 transition-all duration-300 backdrop-blur-sm hover:shadow-md ${
+                className={`flex items-center gap-3 rounded-full border bg-white/80 py-2 pl-2 pr-5 text-sm font-semibold text-slate-700 transition-all duration-300 backdrop-blur-sm hover:shadow-md ${
                   showDropdown
                     ? "border-[var(--color-primary)] ring-4 ring-[var(--color-primary)]/5 shadow-inner"
                     : "border-slate-200 hover:border-slate-300"
                 }`}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-[13px] font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
-                  {profile?.full_name?.charAt(0).toUpperCase() ||
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] text-[13px] font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+                  {user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? (
+                    <img
+                      src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                      alt={profile?.full_name || "User"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    profile?.full_name?.charAt(0).toUpperCase() ||
                     user.email?.charAt(0).toUpperCase() ||
-                    "U"}
+                    "U"
+                  )}
                 </div>
-                <div className="hidden max-w-[120px] flex-col items-start sm:flex">
-                  <span className="truncate text-[13px] font-bold text-slate-900 leading-none capitalize">
+                <div className="hidden max-w-[120px] sm:flex">
+                  <span className="truncate py-0.5 text-[13px] font-bold leading-normal text-slate-900 capitalize">
                     {profile?.full_name || "Account"}
                   </span>
                 </div>

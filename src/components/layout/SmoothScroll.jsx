@@ -19,21 +19,27 @@ const SmoothScroll = ({ children }) => {
 
     lenisRef.current = lenis;
 
+    let rafId;
     function raf(time) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf);
     }
-
-    requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
 
     // Update Lenis when content changes
     const resizeObserver = new ResizeObserver(() => lenis.resize());
     resizeObserver.observe(document.body);
 
+    window.lenis = lenis;
+
     return () => {
       lenis.destroy();
+      cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
+      window.lenis = null;
     };
+
+
   }, []);
 
   return <>{children}</>;

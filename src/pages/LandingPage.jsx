@@ -6,6 +6,7 @@ import AIToolsSection from "../components/sections/AIToolsSection";
 import HowItWorksSection from "../components/sections/HowItWorksSection";
 import StudentLoveSection from "../components/sections/StudentLoveSection";
 import CTASection from "../components/sections/CTASection";
+import BackToTop from "../components/common/BackToTop";
 
 function LandingPage() {
   return (
@@ -20,8 +21,10 @@ function LandingPage() {
         <StudentLoveSection />
         <CTASection />
       </main>
+      <BackToTop />
     </div>
   );
 }
+
 
 export default LandingPage;
