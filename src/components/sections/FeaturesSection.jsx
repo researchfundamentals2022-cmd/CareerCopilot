@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 function FeaturesSection() {
   const features = [
@@ -35,7 +36,13 @@ function FeaturesSection() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="lg:sticky lg:top-28 lg:self-start">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="lg:sticky lg:top-28 lg:self-start"
+          >
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#344955]">
               Features
             </p>
@@ -49,7 +56,13 @@ function FeaturesSection() {
               students can focus on building, not figuring out what to do next.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="mt-8 flex flex-wrap gap-3"
+            >
               <Link
                 to="/signup"
                 className="rounded-xl bg-[#344955] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
@@ -63,25 +76,34 @@ function FeaturesSection() {
               >
                 Explore More
               </a>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           <div className="relative">
             <div className="absolute left-[36px] top-0 hidden h-full w-px bg-slate-200 md:block" />
 
-            {features.map((feature) => (
-              <div
+            {features.map((feature, index) => (
+              <motion.div
                 key={feature.number}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="relative h-[80vh] min-h-[520px]"
               >
                 <div className="sticky top-24">
                   <div className="grid gap-6 md:grid-cols-[72px_1fr] md:gap-8">
                     <div className="relative hidden md:flex md:justify-center">
-                      <div className="relative z-10 flex h-[72px] w-[72px] items-center justify-center rounded-full border-8 border-white bg-[#344955] text-white shadow-[0_12px_30px_rgba(52,73,85,0.18)]">
+                      <motion.div 
+                        initial={{ scale: 0.8 }}
+                        whileInView={{ scale: 1 }}
+                        viewport={{ once: true }}
+                        className="relative z-10 flex h-[72px] w-[72px] items-center justify-center rounded-full border-8 border-white bg-[#344955] text-white shadow-[0_12px_30px_rgba(52,73,85,0.18)]"
+                      >
                         <span className="text-lg font-bold">
                           {feature.number}
                         </span>
-                      </div>
+                      </motion.div>
                     </div>
 
                     <div className="pt-2">
@@ -105,7 +127,7 @@ function FeaturesSection() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -114,4 +136,4 @@ function FeaturesSection() {
   );
 }
 
-export default FeaturesSection;
+export default FeaturesSection;

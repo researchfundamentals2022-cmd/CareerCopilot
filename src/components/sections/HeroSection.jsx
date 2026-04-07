@@ -1,58 +1,131 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import HeroImage from "../../assets/HeroPreviewImage.png";
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, ease: "easeOut" }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 function HeroSection() {
   return (
-    <section className="min-h-[calc(100vh-81px)] bg-white px-6 md:px-12 lg:px-20">
-      <div className="mx-auto grid min-h-[calc(100vh-81px)] max-w-7xl items-center gap-12 lg:grid-cols-2">
-        <div>
-          <p className="mb-4 inline-flex rounded-full bg-violet-50 px-4 py-1 text-sm font-medium text-[var(--color-primary)]">
+    <section className="relative min-h-[calc(100vh-81px)] overflow-hidden bg-white px-6 md:px-12 lg:px-20">
+      {/* Background decorative elements */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="absolute inset-0 z-0 overflow-hidden"
+      >
+        <div className="absolute -left-[10%] top-[10%] h-[500px] w-[500px] rounded-full bg-violet-100/40 blur-[120px]" />
+        <div className="absolute -right-[5%] top-[20%] h-[400px] w-[400px] rounded-full bg-orange-50/30 blur-[100px]" />
+      </motion.div>
+
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-81px)] max-w-7xl items-center gap-12 lg:grid-cols-2">
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
+          <motion.p 
+            variants={fadeInUp}
+            className="mb-4 inline-flex rounded-full bg-violet-50 px-4 py-1 text-sm font-medium text-[var(--color-primary)]"
+          >
             More than just a tool
-          </p>
+          </motion.p>
 
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-[var(--color-text)] md:text-5xl lg:text-6xl">
-            Your career starts with a better resume
-          </h1>
+          <motion.h1 
+            variants={fadeInUp}
+            className="max-w-3xl text-4xl font-bold leading-tight text-[var(--color-text)] md:text-5xl lg:text-6xl"
+          >
+            Your career starts with a <span className="text-[var(--color-primary)]">better resume</span>
+          </motion.h1>
 
-          <p className="mt-6 max-w-2xl text-base leading-7 text-[var(--color-muted)] md:text-lg">
+          <motion.p 
+            variants={fadeInUp}
+            className="mt-6 max-w-2xl text-base leading-7 text-[var(--color-muted)] md:text-lg"
+          >
             Career Copilot helps students begin with a professional resume and
             evolves into a complete career support platform. Start building
             today, grow with AI tools tomorrow.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+          <motion.div 
+            variants={fadeInUp}
+            className="mt-8 flex flex-col gap-4 sm:flex-row"
+          >
             <Link
               to="/how-it-works"
-              className="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+              className="group relative overflow-hidden rounded-xl bg-[var(--color-primary)] px-8 py-4 text-center text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
             >
-              Create Resume
+              <span className="relative z-10">Create Resume</span>
+              <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
             </Link>
 
             <a
               href="#features"
-              className="rounded-xl border border-slate-300 px-6 py-3 text-center text-sm font-semibold text-slate-700 transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+              className="rounded-xl border border-slate-200 px-8 py-4 text-center text-sm font-semibold text-slate-700 transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-alt)] hover:text-[var(--color-primary)]"
             >
               Explore Features
             </a>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        <div className="relative">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, x: 20 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="relative"
+        >
           <div className="absolute -left-6 -top-6 h-32 w-32 rounded-full bg-[var(--color-accent-2)]/30 blur-3xl" />
           <div className="absolute -bottom-8 -right-6 h-40 w-40 rounded-full bg-[var(--color-secondary)]/20 blur-3xl" />
 
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-[var(--color-bg-alt)] p-4 shadow-lg">
+          <motion.div 
+            animate={{ 
+              y: [0, -15, 0],
+            }}
+            transition={{ 
+              duration: 5, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl"
+          >
             <img
               src={HeroImage}
               alt="Career Copilot resume builder preview"
               className="h-full w-full rounded-2xl object-cover"
             />
-
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
+
+      {/* Scroll Indicator */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+      >
+        <motion.div 
+          animate={{ y: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="flex h-10 w-6 justify-center rounded-full border-2 border-slate-300 p-1"
+        >
+          <div className="h-2 w-1 rounded-full bg-slate-400" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
 
-export default HeroSection;
+export default HeroSection;
