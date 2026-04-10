@@ -460,6 +460,7 @@ function AchievementsForm({ value, setResumeData, onOpenAIModal }) {
                     </div>
 
                     <textarea
+                      data-lenis-prevent="true"
                       rows={5}
                       value={item.description || ""}
                       onChange={(e) => {

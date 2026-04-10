@@ -591,6 +591,7 @@ function ProjectsForm({ value, setResumeData, onOpenAIModal, showValidationError
                     </div>
 
                     <textarea
+                      data-lenis-prevent="true"
                       rows={5}
                       maxLength={600}
                       value={project.description || ""}

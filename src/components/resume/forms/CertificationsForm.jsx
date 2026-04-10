@@ -458,6 +458,7 @@ function CertificationsForm({ value, setResumeData, onOpenAIModal }) {
                     </div>
 
                     <textarea
+                      data-lenis-prevent="true"
                       rows={4}
                       maxLength={500}
                       value={item.description || ""}

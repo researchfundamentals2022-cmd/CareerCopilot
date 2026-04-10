@@ -104,6 +104,7 @@ function SummaryForm({ value, setResumeData, onOpenAIModal, showValidationErrors
             </div>
 
             <textarea
+              data-lenis-prevent="true"
               id="summary"
               name="summary"
               rows={8}

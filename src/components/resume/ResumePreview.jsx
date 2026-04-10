@@ -5,15 +5,17 @@ import {
   useMemo,
   useCallback,
 } from "react";
-import { IoDownload } from "react-icons/io5";
+import { IoDownload, IoWarningOutline, IoClose, IoLogoLinkedin } from "react-icons/io5";
 
 import ClassicTemplate from "./templates/ClassicTemplate";
 import ModernTemplate from "./templates/ModernTemplate";
 import MinimalTemplate from "./templates/MinimalTemplate";
+import FresherTemplate from "./templates/FresherTemplate";
 import {
   fetchResumeReadModel,
   readModelToResumeData,
 } from "../../services/resumeReadModelApi";
+import { supabase } from "../../services/supabase";
 
 const PAPER_WIDTH = 794;
 const PAPER_HEIGHT = 1122;
@@ -102,6 +104,11 @@ const TEMPLATES = [
     name: "Minimalist",
     desc: "Light and simple layout with less visual density.",
   },
+  {
+    id: "fresher",
+    name: "Fresher Focused",
+    desc: "Optimized for students and entry-level roles with academic layout.",
+  },
 ];
 
 const waitForFrames = async (count = 2) => {
@@ -167,6 +174,7 @@ export default function ResumePreview({
   const [needsMultiPage, setNeedsMultiPage] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
+  const [showDownloadAlert, setShowDownloadAlert] = useState(false);
   const [previewData, setPreviewData] = useState(safeResumeData);
 
   const pageRef = useRef(null);
@@ -174,6 +182,27 @@ export default function ResumePreview({
 
   const statusMeta = getPreviewStatusMeta(projectionStatus);
   const fitConfig = FIT_PRESETS[fitIndex];
+
+  const [targetCompany, setTargetCompany] = useState("");
+
+  useEffect(() => {
+    const fetchCompany = async () => {
+      if (!resumeId) return;
+      try {
+        const { data, error } = await supabase
+          .from("resumes")
+          .select("target_job_id, saved_jobs(company_name)")
+          .eq("id", resumeId)
+          .single();
+        if (!error && data?.saved_jobs?.company_name) {
+          setTargetCompany(data.saved_jobs.company_name);
+        }
+      } catch (err) {
+        console.error("Failed to fetch target company", err);
+      }
+    };
+    fetchCompany();
+  }, [resumeId]);
 
   const isDataComplete = useMemo(() => {
     if (!safeResumeData.contact?.fullName) return false;
@@ -232,6 +261,8 @@ export default function ResumePreview({
         return <ModernTemplate {...props} />;
       case "minimal":
         return <MinimalTemplate {...props} />;
+      case "fresher":
+        return <FresherTemplate {...props} />;
       default:
         return <ClassicTemplate {...props} />;
     }
@@ -360,6 +391,12 @@ export default function ResumePreview({
   }, []);
 
   const handleDownloadPDF = async () => {
+    setShowDownloadAlert(true);
+  };
+
+  const proceedWithDownload = async () => {
+    setShowDownloadAlert(false);
+
     try {
       setIsPreparingPdf(true);
 
@@ -375,6 +412,15 @@ export default function ResumePreview({
       document.body.appendChild(iframe);
 
       const iframeDoc = iframe.contentWindow.document;
+
+      const personName = (safeResumeData?.contact?.fullName || "Resume").replace(/\s+/g, "");
+      const templateName = TEMPLATES.find(t => t.id === template)?.name?.replace(/\s+/g, "") || template;
+      const parsedCompany = targetCompany ? `_${targetCompany.replace(/\s+/g, "")}` : "";
+      const filename = `${personName}_${templateName}${parsedCompany}_Resume`;
+      
+      iframeDoc.title = filename;
+      const originalTitle = document.title;
+      document.title = filename;
 
       // 2. Clone all styles from the main document
       let styleString = "";
@@ -430,6 +476,7 @@ export default function ResumePreview({
       // 6. Cleanup
       setTimeout(() => {
         document.body.removeChild(iframe);
+        document.title = originalTitle;
         setIsPreparingPdf(false);
       }, 1000);
 
@@ -607,6 +654,79 @@ export default function ResumePreview({
           </div>
         </div>
       </section>
+
+      {/* Custom Download Alert Modal */}
+      {showDownloadAlert && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity" data-lenis-prevent="true">
+          <div className="relative flex flex-col max-h-[90vh] w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Header section with vibrant gradient */}
+            <div className="shrink-0 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] p-6 text-white sm:p-8">
+              <button
+                onClick={() => setShowDownloadAlert(false)}
+                className="absolute right-4 top-4 rounded-full bg-black/10 p-2 text-white/90 transition hover:bg-black/20 hover:text-white"
+              >
+                <IoClose size={20} />
+              </button>
+              
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 shadow-inner backdrop-blur-md">
+                <IoDownload size={32} className="text-white drop-shadow-md" />
+              </div>
+              
+              <h3 className="text-2xl font-bold tracking-tight">
+                Ready to Download!
+              </h3>
+            </div>
+
+            {/* Content section */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8">
+              <p className="text-lg leading-relaxed text-slate-800 font-bold tracking-tight">
+                Great to see you, {safeResumeData?.contact?.fullName?.split(' ')[0] || 'User'}!
+              </p>
+              
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 font-medium">
+                We are thrilled to be part of your journey as you take the next step in your career. Please keep in mind that your export will include only the content currently visible in this preview.
+              </p>
+              
+              <div className="mt-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white p-5 shadow-sm">
+                <p className="text-[13px] leading-relaxed text-slate-700">
+                  <span className="mb-2 block font-extrabold text-[var(--color-primary)] text-xs uppercase tracking-widest flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent-1)]"></span> The Winning Strategy
+                  </span>
+                  One-page resumes are the gold standard. To get you noticed by recruiters and help you "beat the bots" (ATS), keeping your info concise is key. To make sure you stay competitive, we’ve trimmed any extra content to fit this high-impact, single-page format.
+                </p>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-5 shadow-sm">
+                <p className="text-[13px] leading-relaxed text-slate-700">
+                  <span className="mb-2 block font-extrabold text-[#0077b5] text-xs uppercase tracking-widest flex items-center gap-2">
+                    <IoLogoLinkedin size={14} /> Stay Ahead of the Game
+                  </span>
+                  We are constantly working on something interesting for your future—stay tuned! To get the latest tips and see how we are striving hard to shape your career, {' '}
+                  <a href="https://www.linkedin.com/company/cognisys-ai/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#0077b5] hover:underline inline-flex items-center gap-1.5 transition-colors">
+                    follow us at <IoLogoLinkedin size={16} /> Cognisys AI
+                  </a>.
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  onClick={() => setShowDownloadAlert(false)}
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={proceedWithDownload}
+                  className="rounded-xl bg-[var(--color-primary)] px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-[var(--color-primary)]/20 transition hover:opacity-90 hover:shadow-lg active:scale-95"
+                >
+                  Confirm Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

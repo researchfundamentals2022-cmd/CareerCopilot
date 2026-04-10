@@ -360,13 +360,15 @@ function CustomSectionForm({
                     </div>
 
                     <textarea
-                      rows={5}
+                      data-lenis-prevent="true"
+                      rows={4}
+                      maxLength={600}
                       value={item.description || ""}
                       onChange={(e) => {
                         updateItem(item.clientKey, "description", e.target.value);
                         setTouched(true);
                       }}
-                      placeholder="Add details about this entry..."
+                      placeholder="Share additional details, achievements, or context related to this entry..."
                       className={`w-full rounded-xl border bg-white px-4 py-3 text-sm font-medium leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
                         getFieldError(index, "description")
                           ? "border-red-300 focus:border-red-500 focus:ring-red-100"

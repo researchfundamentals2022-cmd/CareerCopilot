@@ -574,6 +574,7 @@ function ExperienceForm({ value, setResumeData, onOpenAIModal, showValidationErr
                     </div>
 
                     <textarea
+                      data-lenis-prevent="true"
                       rows={5}
                       maxLength={600}
                       value={item.description || ""}
