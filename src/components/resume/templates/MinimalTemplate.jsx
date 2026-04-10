@@ -156,17 +156,23 @@ const SectionHeader = ({ title, fitConfig }) => (
 
 const ContactBlock = ({ contact, fitConfig }) => {
   const line1 = [
-    cleanInlineText(contact?.email),
+    contact?.email ? <a key="email" href={`mailto:${cleanInlineText(contact.email)}`} style={{ color: "inherit", textDecoration: "none" }}>{cleanInlineText(contact.email)}</a> : null,
     cleanInlineText(contact?.phone),
     cleanInlineText(contact?.location),
   ].filter(Boolean);
 
+  const linkedin = cleanInlineText(contact?.linkedinUrl);
+  const github = cleanInlineText(contact?.githubUrl);
+  const otherLinks = Array.isArray(contact?.otherLinks) ? contact.otherLinks : [];
+
   const line2 = [
-    cleanInlineText(contact?.linkedinUrl).replace(/^https?:\/\//, ""),
-    cleanInlineText(contact?.githubUrl).replace(/^https?:\/\//, ""),
-    ...normalizeLinks(contact?.otherLinks).map((l) =>
-      l.replace(/^https?:\/\//, "")
-    ),
+    linkedin ? <span key="linkedin"><a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{linkedin.replace(/^https?:\/\//, "")}</a></span> : null,
+    github ? <span key="github"><a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{github.replace(/^https?:\/\//, "")}</a></span> : null,
+    ...otherLinks.map((l, i) => {
+      if (!l || !l.url) return null;
+      const fullUrl = l.url.startsWith('http') ? l.url : `https://${l.url}`;
+      return <span key={`other-${i}`}>{l.label ? `${l.label}: ` : ""}<a href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{l.url.replace(/^https?:\/\//, "")}</a></span>;
+    })
   ].filter(Boolean);
 
   return (
@@ -505,7 +511,10 @@ const ProjectsSection = ({ items, fitConfig }) => {
                           textDecoration: "underline",
                         }}
                       >
-                        Link
+                        {(() => {
+                          const rawLink = cleanInlineText(item.link);
+                          return <a href={rawLink.startsWith('http') ? rawLink : `https://${rawLink}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>Link</a>;
+                        })()}
                       </span>
                     )}
                   </div>
@@ -720,6 +729,10 @@ const CompactListSection = ({ title, items, fitConfig, mode }) => {
                     .map(cleanInlineText)
                     .filter(Boolean)
                     .join(" • ")}
+                  {item?.link && (() => {
+                    const rawLink = cleanInlineText(item.link);
+                    return <> • <a href={rawLink.startsWith('http') ? rawLink : `https://${rawLink}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{rawLink.replace(/^https?:\/\//, "")}</a></>;
+                  })()}
                 </div>
               </div>
             );

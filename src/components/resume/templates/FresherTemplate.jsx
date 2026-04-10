@@ -133,9 +133,16 @@ const SectionHeader = ({ title, fitConfig }) => (
 const ResumeHeader = ({ contact, fitConfig }) => {
   const fullName = cleanInlineText(contact?.fullName) || "YOUR NAME";
   
+  const renderJoined = (arr, sep = " | ") => arr.map((item, index) => (
+    <React.Fragment key={index}>
+      {item}
+      {index < arr.length - 1 && sep}
+    </React.Fragment>
+  ));
+
   const contactParts = [
     contact?.phone ? `Ph:${cleanInlineText(contact.phone)}` : "",
-    contact?.email ? `Email: ${cleanInlineText(contact.email)}` : "",
+    contact?.email ? <span key="email">Email: <a href={`mailto:${cleanInlineText(contact.email)}`} style={{ color: "inherit", textDecoration: "none" }}>{cleanInlineText(contact.email)}</a></span> : "",
     contact?.location ? `Add: ${cleanInlineText(contact.location)}` : "",
   ].filter(Boolean);
 
@@ -144,9 +151,12 @@ const ResumeHeader = ({ contact, fitConfig }) => {
   const otherLinks = normalizeNamedLinks(contact?.otherLinks);
 
   const linkParts = [
-    linkedin ? `LinkedIn:- ${linkedin.replace(/^https?:\/\//, "")}` : "",
-    github ? `GitHub:- ${github.replace(/^https?:\/\//, "")}` : "",
-    ...otherLinks.map(l => `${l.label ? l.label + ":- " : ""}${l.url.replace(/^https?:\/\//, "")}`)
+    linkedin ? <span key="linkedin">LinkedIn:- <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{linkedin.replace(/^https?:\/\//, "")}</a></span> : "",
+    github ? <span key="github">GitHub:- <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{github.replace(/^https?:\/\//, "")}</a></span> : "",
+    ...otherLinks.map((l, i) => {
+      const fullUrl = l.url.startsWith('http') ? l.url : `https://${l.url}`;
+      return <span key={`other-${i}`}>{l.label ? l.label + ":- " : ""}<a href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{l.url.replace(/^https?:\/\//, "")}</a></span>;
+    })
   ].filter(Boolean);
 
   return (
@@ -175,7 +185,7 @@ const ResumeHeader = ({ contact, fitConfig }) => {
         gap: "2px"
       }}>
         {contactParts.length > 0 && (
-          <div style={{ wordSpacing: "2px" }}>{contactParts.join(" | ")}</div>
+          <div style={{ wordSpacing: "2px" }}>{renderJoined(contactParts, " | ")}</div>
         )}
         {linkParts.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", columnGap: "14px", rowGap: "2px" }}>
@@ -339,7 +349,8 @@ const ProjectsSection = ({ items, fitConfig }) => {
           const title = cleanInlineText(item?.title);
           const organization = cleanInlineText(item?.organization);
           const projectType = cleanInlineText(item?.projectType);
-          const link = cleanInlineText(item?.link).replace(/^https?:\/\//, "");
+          const rawLink = cleanInlineText(item?.link);
+          const link = rawLink ? <a href={rawLink.startsWith('http') ? rawLink : `https://${rawLink}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{rawLink.replace(/^https?:\/\//, "")}</a> : null;
           const bullets = extractBullets(item?.description);
           const paragraph = normalizeParagraph(item?.description);
           const dateText = buildDateRange({

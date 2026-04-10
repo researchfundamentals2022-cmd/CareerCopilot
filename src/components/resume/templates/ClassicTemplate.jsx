@@ -161,29 +161,30 @@ const SectionHeader = ({ title, fitConfig }) => (
 
 const ContactBlock = ({ contact, fitConfig }) => {
   const contactLine = [
-    cleanInlineText(contact?.email),
+    contact?.email ? <a key="email" href={`mailto:${cleanInlineText(contact.email)}`} style={{ color: "inherit", textDecoration: "none" }}>{cleanInlineText(contact.email)}</a> : null,
     cleanInlineText(contact?.phone),
     cleanInlineText(contact?.location),
   ].filter(Boolean);
 
+  const linkedin = cleanInlineText(contact?.linkedinUrl);
+  const github = cleanInlineText(contact?.githubUrl);
+
   const linkLine = [
-    cleanInlineText(contact?.linkedinUrl)
-      ? `LinkedIn: ${cleanInlineText(contact?.linkedinUrl).replace(
-          /^https?:\/\//,
-          ""
-        )}`
-      : "",
-    cleanInlineText(contact?.githubUrl)
-      ? `GitHub: ${cleanInlineText(contact?.githubUrl).replace(
-          /^https?:\/\//,
-          ""
-        )}`
-      : "",
-    ...normalizeNamedLinks(contact?.otherLinks).map((item) => {
+    linkedin ? <span key="linkedin">LinkedIn: <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{linkedin.replace(/^https?:\/\//, "")}</a></span> : null,
+    github ? <span key="github">GitHub: <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{github.replace(/^https?:\/\//, "")}</a></span> : null,
+    ...normalizeNamedLinks(contact?.otherLinks).map((item, i) => {
       const cleanUrl = item.url.replace(/^https?:\/\//, "");
-      return item.label ? `${item.label}: ${cleanUrl}` : cleanUrl;
-    }),
+      const fullUrl = item.url.startsWith('http') ? item.url : `https://${item.url}`;
+      return <span key={`other-${i}`}>{item.label ? `${item.label}: ` : ""}<a href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{cleanUrl}</a></span>;
+    })
   ].filter(Boolean);
+
+  const renderJoined = (arr, sep = " | ") => arr.map((item, index) => (
+    <React.Fragment key={index}>
+      {item}
+      {index < arr.length - 1 && sep}
+    </React.Fragment>
+  ));
 
   return (
     <div
@@ -200,8 +201,8 @@ const ContactBlock = ({ contact, fitConfig }) => {
         wordBreak: "break-word",
       }}
     >
-      {contactLine.length > 0 && <div>{contactLine.join(" | ")}</div>}
-      {linkLine.length > 0 && <div>{linkLine.join(" | ")}</div>}
+      {contactLine.length > 0 && <div>{renderJoined(contactLine)}</div>}
+      {linkLine.length > 0 && <div>{renderJoined(linkLine)}</div>}
     </div>
   );
 };
@@ -514,7 +515,9 @@ const ProjectsSection = ({ items, fitConfig }) => {
           const title = cleanInlineText(item?.title);
           const projectType = cleanInlineText(item?.projectType);
           const organization = cleanInlineText(item?.organization);
-          const link = cleanInlineText(item?.link).replace(/^https?:\/\//, "");
+          
+          const rawLink = cleanInlineText(item?.link);
+          const link = rawLink ? <a href={rawLink.startsWith('http') ? rawLink : `https://${rawLink}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{rawLink.replace(/^https?:\/\//, "")}</a> : null;
 
           const bullets = extractBullets(item?.description);
           const paragraph = normalizeParagraph(item?.description);
@@ -614,6 +617,8 @@ const CompactListSection = ({ title, items, fitConfig, mode }) => {
         {items.map((item, index) => {
           if (mode === "certifications") {
             const issued = formatMonthYear(item?.issuedMonth, item?.issuedYear);
+            const rawLink = cleanInlineText(item?.link);
+            const credentialLink = rawLink ? <a href={rawLink.startsWith('http') ? rawLink : `https://${rawLink}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{rawLink.replace(/^https?:\/\//, "")}</a> : null;
 
             return (
               <li
@@ -626,6 +631,7 @@ const CompactListSection = ({ title, items, fitConfig, mode }) => {
                 {cleanInlineText(item?.issuingBody) &&
                   `, ${cleanInlineText(item?.issuingBody)}`}
                 {issued && ` (${issued})`}
+                {credentialLink && <> - {credentialLink}</>}
               </li>
             );
           }
@@ -665,9 +671,11 @@ const CustomDynamicSection = ({ title, items, fitConfig }) => {
         }}
       >
         {items.map((item, index) => {
-          const entryTitle = cleanInlineText(item?.title);
+          const title = cleanInlineText(item?.title);
           const subtitle = cleanInlineText(item?.subtitle);
-          const paragraph = normalizeParagraph(item?.description);
+          const description = normalizeParagraph(item?.description);
+          const rawLink = cleanInlineText(item?.link);
+          const link = rawLink ? <a href={rawLink.startsWith('http') ? rawLink : `https://${rawLink}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{rawLink.replace(/^https?:\/\//, "")}</a> : null;
           const bullets = extractBullets(item?.description);
 
           const dateText = buildDateRange({
