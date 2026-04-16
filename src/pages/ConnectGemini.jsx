@@ -104,15 +104,61 @@ function ConnectGemini() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 px-6 py-12 md:px-12 lg:px-20">
+    <div className="min-h-screen bg-slate-50/50 px-4 py-8 md:px-12 lg:px-20 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-12 lg:grid-cols-2">
-          <div className="flex flex-col justify-center">
-            <span className="mb-4 inline-flex w-fit rounded-full bg-violet-100 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
-              Step 2 of 3
-            </span>
+        <span className="mb-6 inline-flex w-fit rounded-full bg-violet-100 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+          Step 2 of 3
+        </span>
 
-            <h1 className="text-4xl font-bold leading-tight text-slate-900 md:text-5xl">
+        <div className="mb-10 overflow-hidden rounded-[24px] md:rounded-[32px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+          <div className="p-6 md:p-10">
+            <div className="flex flex-col gap-10 lg:flex-row lg:items-center">
+              <div className="lg:w-1/2">
+                <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-4 py-1 text-xs font-bold uppercase tracking-wider text-violet-700">
+                  <span className="h-2 w-2 rounded-full bg-violet-600 animate-pulse"></span>
+                  Start Here: Video Guide
+                </div>
+                <h3 className="mt-4 text-3xl font-bold text-slate-900">Watch the Setup Guide</h3>
+                <p className="mt-5 text-lg leading-relaxed text-slate-600">
+                  Follow this simple step to <strong>save 1000's of rupees</strong> on monthly AI subscriptions! By using your own key, most users can stay completely within the <strong>generous free tier</strong> provided by Google.
+                </p>
+                
+                <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 ring-1 ring-slate-100">
+                  <div className="flex gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                      <span className="text-xl">⚡</span>
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900">Reached your limit?</h4>
+                      <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                        If you use Gemini very heavily and hit a temporary limit, don't worry! Simply <strong>wait for a short while</strong> for your API key to "recharge" and it will start working again automatically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 lg:w-1/2 shadow-lg">
+                <div className="aspect-video">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src="https://www.youtube.com/embed/JIH9QU4ik9g?si=LCeKZ0TL90xaRdk9"
+                    title="How to get Gemini API Key"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-8 lg:gap-12 lg:grid-cols-2">
+          <div className="flex flex-col justify-center">
+
+            <h1 className="text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
               Connect your Gemini API key
             </h1>
 
@@ -121,7 +167,8 @@ function ConnectGemini() {
               support tools. Add your API key once and continue with your setup.
             </p>
 
-            <div className="mt-8 rounded-3xl border border-slate-200 bg-[var(--color-bg-alt)] p-6 shadow-sm">
+
+            <div className="mt-6 rounded-3xl border border-slate-200 bg-[var(--color-bg-alt)] p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900">How to get your API key</h2>
               <ol className="mt-4 list-decimal space-y-3 pl-4 text-sm leading-6 text-slate-600">
                 <li>
@@ -130,7 +177,6 @@ function ConnectGemini() {
                 <li>Click <strong>"Get API key"</strong> in the left sidebar.</li>
                 <li>Click the blue <strong>"Create API key"</strong> button.</li>
                 <li>Search for and select your Google Cloud project (or create a new one).</li>
-                <li>If it asks, name your key and click <strong>"Create API key in existing project"</strong>.</li>
                 <li>Copy the generated key (starts with <code>AIza...</code>) and paste it below.</li>
               </ol>
             </div>
@@ -145,7 +191,7 @@ function ConnectGemini() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60">
+          <div className="rounded-[24px] md:rounded-[28px] border border-slate-200 bg-white p-6 md:p-8 shadow-xl shadow-slate-200/60">
             <h2 className="text-2xl font-semibold text-slate-900">Add Gemini API key</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Paste your Gemini API key below to continue.
@@ -226,6 +272,7 @@ function ConnectGemini() {
             )}
           </div>
         </div>
+
       </div>
     </div>
   );
