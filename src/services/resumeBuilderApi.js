@@ -1399,3 +1399,46 @@ export const saveAllResumeSections = async ({
     regenerateReadModel: true,
   });
 };
+
+/**
+ * Regenerates the full document snapshot (Read Model) for a resume by fetching all fragmented data.
+ * Used for "healing" the Dashboard for older resumes.
+ */
+export const regenerateResumeSnapshot = async (resumeId, userId) => {
+  if (!resumeId || !userId) throw new Error("Missing resumeId or userId for snapshot regeneration");
+
+  // 1. Fetch fragmented data
+  const [core, customSections] = await Promise.all([
+    loadResumeCoreSections(resumeId),
+    loadCustomSections(resumeId, true)
+  ]);
+
+  const [skills, education, experience, projects, certifications, achievements] = await Promise.all([
+    repeatableSectionLoaders.skills(resumeId),
+    repeatableSectionLoaders.education(resumeId),
+    repeatableSectionLoaders.experience(resumeId),
+    repeatableSectionLoaders.projects(resumeId),
+    repeatableSectionLoaders.certifications(resumeId),
+    repeatableSectionLoaders.achievements(resumeId),
+  ]);
+
+  const fullResumeData = {
+    ...core,
+    skills,
+    education,
+    experience,
+    projects,
+    certifications,
+    achievements
+  };
+
+  // 2. Build and save the read model
+  const result = await upsertResumeReadModel({
+    resumeId,
+    userId,
+    resumeData: fullResumeData,
+    customSections
+  });
+
+  return result;
+};

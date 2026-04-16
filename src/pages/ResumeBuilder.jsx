@@ -486,19 +486,28 @@ function ResumeBuilder() {
     [saveDirtySections]
   );
 
+  const backgroundSaveTimeoutRef = useRef(null);
   const queueCurrentSectionBackgroundSave = useCallback(() => {
     if (!currentSection?.key) return;
 
-    if (currentSection.key === "review") {
-      if (dirtySections.size > 0) {
-        saveSectionsInBackground(Array.from(dirtySections));
-      }
-      return;
+    // Clear existing debounce timer
+    if (backgroundSaveTimeoutRef.current) {
+      clearTimeout(backgroundSaveTimeoutRef.current);
     }
 
-    if (dirtySections.has(currentSection.key)) {
-      saveSectionsInBackground([currentSection.key]);
-    }
+    // Debounce save by 500ms to handle rapid navigation/typing
+    backgroundSaveTimeoutRef.current = setTimeout(() => {
+      if (currentSection.key === "review") {
+        if (dirtySections.size > 0) {
+          saveSectionsInBackground(Array.from(dirtySections));
+        }
+        return;
+      }
+
+      if (dirtySections.has(currentSection.key)) {
+        saveSectionsInBackground([currentSection.key]);
+      }
+    }, 500);
   }, [currentSection?.key, dirtySections, saveSectionsInBackground]);
 
   const ensureSectionLoaded = useCallback(
@@ -759,30 +768,60 @@ function ResumeBuilder() {
     syncOnReviewEntry();
   }, [currentSection?.key, resumeId]);
 
-  // Optimized polling for projection state.
+  // Realtime subscription for projection state - replaces redundant polling
   useEffect(() => {
-    if (!shouldTrackProjection) return;
+    if (!shouldTrackProjection || !resumeId) return;
 
-    let cancelled = false;
+    let channel = null;
 
-    const poll = async () => {
-      if (cancelled) return;
+    const setupRealtime = async () => {
+      // 1. Initial manual check to ensure we have the absolute latest status
       await refreshProjectionState(activeProjectionJobId);
+
+      // 2. Subscribe to realtime updates for this resume's projection jobs
+      channel = supabase
+        .channel(`projection-jobs-${resumeId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to inserts and updates
+            schema: 'public',
+            table: 'resume_projection_jobs',
+            filter: `resume_id=eq.${resumeId}`
+          },
+          (payload) => {
+            // When a job record is updated or created, refresh our state
+            const newJob = payload.new;
+            if (newJob) {
+              if (newJob.status === 'completed' || newJob.status === 'error') {
+                // If it's a final state, refresh the state and set active job to null
+                refreshProjectionState(newJob.id);
+                if (newJob.id === activeProjectionJobId) {
+                  setActiveProjectionJobId(null);
+                }
+              } else if (newJob.status === 'processing' || newJob.status === 'queued') {
+                // If it's starting, track it
+                setActiveProjectionJobId(newJob.id);
+                setProjectionStatus("updating");
+              }
+            }
+          }
+        )
+        .subscribe();
     };
 
-    // Fast polling (1.5s) when actively updating, slower (5s) when sitting idle.
-    const intervalTime = (projectionStatus === "updating" || projectionStatus === "saving" || !!activeProjectionJobId) 
-      ? 1500 
-      : 5000;
+    setupRealtime();
 
-    poll(); // Instant check on mount/trigger
-    const intervalId = window.setInterval(poll, intervalTime);
+    // Fallback polling (very slow) in case realtime fails or socket disconnects
+    const fallbackId = setInterval(() => {
+      refreshProjectionState(activeProjectionJobId);
+    }, 15000); // Once every 15s is enough for a fallback
 
     return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
+      if (channel) supabase.removeChannel(channel);
+      clearInterval(fallbackId);
     };
-  }, [activeProjectionJobId, refreshProjectionState, shouldTrackProjection, projectionStatus]);
+  }, [activeProjectionJobId, refreshProjectionState, shouldTrackProjection, resumeId]);
 
   const handleAddCustomSection = () => {
     const trimmed = newSectionName.trim();

@@ -294,8 +294,20 @@ export const readModelToResumeData = (documentJson = {}) => {
   };
 };
 
-export const fetchResumeReadModel = async (resumeId) => {
+// Simple in-memory cache to reduce database load during rapid navigation
+const readModelCache = new Map();
+const CACHE_TTL = 30000; // 30 seconds
+
+export const fetchResumeReadModel = async (resumeId, forceRefresh = false) => {
   if (!resumeId) throw new Error("resumeId is required");
+
+  // Check cache unless forceRefresh is true
+  if (!forceRefresh) {
+    const cached = readModelCache.get(resumeId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data;
+    }
+  }
 
   const { data, error } = await supabase
     .from("resume_full_documents")
@@ -304,6 +316,15 @@ export const fetchResumeReadModel = async (resumeId) => {
     .maybeSingle();
 
   if (error) throw error;
+
+  // Update cache
+  if (data) {
+    readModelCache.set(resumeId, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
   return data || null;
 };
 

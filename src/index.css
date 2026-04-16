@@ -59,12 +59,25 @@ html.lenis body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
+  background: #cbd5e1; /* Slate 300 - better visibility */
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+  background: #94a3b8; /* Slate 400 */
+}
+
+/* Specific helper for high-density areas */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8; /* Higher contrast Slate 400 default */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* Slate 500 */
 }
 
 @keyframes fadeInUp {

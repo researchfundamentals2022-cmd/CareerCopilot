@@ -1,9 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FiEdit3, FiLayout, FiBookmark, FiLogOut, FiPlus } from "react-icons/fi";
-import { BsPinFill, BsPinAngleFill } from "react-icons/bs";
+import { 
+  BsGrid, 
+  BsListUl as BsList, 
+  BsPinFill,
+  BsSearch,
+  BsPlusCircle
+} from "react-icons/bs";
+import ResumeThumbnail from "../components/dashboard/ResumeThumbnail";
 import { supabase } from "../services/supabase";
-import { initializeResumeBuilder, saveResumeSectionsBatch, ensureProfileAndResume } from "../services/resumeBuilderApi";
+import { 
+  initializeResumeBuilder, 
+  saveResumeSectionsBatch, 
+  ensureProfileAndResume
+} from "../services/resumeBuilderApi";
 import ConfirmModal from "../components/common/ConfirmModal";
 import JobBoard from "../components/dashboard/JobBoard";
 
@@ -107,7 +118,7 @@ function Dashboard() {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState("list"); // Default to list view for clean experience
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   
@@ -122,6 +133,7 @@ function Dashboard() {
   // Renaming State
   const [editingResumeId, setEditingResumeId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
   
   // Create Modal State
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -177,6 +189,23 @@ function Dashboard() {
 
     loadData();
   }, [navigate]);
+
+  const TemplateBadge = ({ templateName }) => {
+    const config = {
+      modern: { label: "Modern Split", bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-100" },
+      classic: { label: "Classic ATS", bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-200" },
+      minimal: { label: "Minimalist", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+      fresher: { label: "Fresher Focused", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+    };
+
+    const style = config[templateName?.toLowerCase()] || config.classic;
+
+    return (
+      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${style.bg} ${style.text} border ${style.border}`}>
+        {style.label}
+      </span>
+    );
+  };
 
   const handleLinkJob = async (jobId) => {
     if (!activeResumeForJob) return;
@@ -498,7 +527,17 @@ function Dashboard() {
     if (!jobToDelete) return;
     try {
       await supabase.from("saved_jobs").delete().eq("id", jobToDelete);
+      
+      // Update saved jobs state locally
       setSavedJobs(prev => prev.filter(j => j.id !== jobToDelete));
+      
+      // Update resumes state locally (nullify any resume pointing to this job)
+      setResumes(prev => prev.map(r => 
+        r.target_job_id === jobToDelete 
+          ? { ...r, target_job_id: null, saved_jobs: null } 
+          : r
+      ));
+
       setJobDeleteModalOpen(false);
       setJobToDelete(null);
     } catch (err) {
@@ -602,9 +641,7 @@ function Dashboard() {
           {activeTab === "all" && (
             <div className="flex items-center gap-4 py-2 flex-wrap">
               <div className="relative flex-grow sm:flex-grow-0">
-                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <BsSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input 
                   type="text" 
                   placeholder="Search documents..." 
@@ -621,17 +658,13 @@ function Dashboard() {
                     onClick={() => setViewMode("grid")}
                     className={`p-1.5 transition ${viewMode === "grid" ? "bg-slate-700 text-white" : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"}`}
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
+                    <BsGrid className="h-5 w-5" />
                   </button>
                   <button 
                     onClick={() => setViewMode("list")}
                     className={`p-1.5 transition ${viewMode === "list" ? "bg-slate-700 text-white" : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"}`}
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
+                    <BsList className="h-5 w-5" />
                   </button>
                 </div>
               </div>
@@ -657,7 +690,6 @@ function Dashboard() {
                 <tr className="border-b border-slate-50">
                   <th className="py-5 pl-6 pr-3 text-[13px] font-bold text-slate-900 uppercase tracking-wide">Name</th>
                   <th className="py-5 px-3 text-[13px] font-bold text-slate-900 uppercase tracking-wide">Job</th>
-                  <th className="py-5 px-3 text-[13px] font-bold text-slate-900 uppercase tracking-wide">Type</th>
                   <th className="py-5 px-3 text-[13px] font-bold text-slate-900 uppercase tracking-wide cursor-pointer flex items-center gap-1 group">
                     Created 
                     <span className="text-slate-400 group-hover:text-[var(--color-primary)]">↓</span>
@@ -719,16 +751,8 @@ function Dashboard() {
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                               </button>
                             </div>
-                            <div 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                navigate(`/resume-builder?id=${resume.id}&action=download`);
-                              }}
-                              className="mt-1.5 inline-flex items-center gap-2 rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[var(--color-primary)] cursor-pointer border border-slate-200 shadow-sm"
-                              title="Change Template"
-                            >
-                              <TemplateMiniPreview template={resume.template_name} />
-                              <span className="leading-none">{resume.template_name === 'modern' ? 'Modern Split' : resume.template_name === 'minimal' ? 'Minimalist' : 'Classic ATS'}</span>
+                            <div className="mt-1">
+                              <TemplateBadge templateName={resume.template_name} />
                             </div>
                           </>
                         )}
@@ -756,11 +780,11 @@ function Dashboard() {
                         </button>
                       )}
                     </td>
-                    <td className="py-4 px-3 text-[14px] font-medium text-slate-500 capitalize">Resume</td>
+
                     <td className="py-4 px-3 text-[14px] font-medium text-slate-700">{formatDate(resume.created_at)}</td>
                     <td className="py-4 px-3 text-[14px] font-medium text-slate-500 hover:text-[var(--color-primary)] hover:underline cursor-pointer">{getRelativeTime(resume.updated_at)}</td>
                     <td className="py-4 px-6">
-                      <div className="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex items-center justify-end gap-1.5 opacity-100 lg:opacity-0 transition-opacity lg:group-hover:opacity-100">
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigate(`/resume-builder?id=${resume.id}`); }}
                           className="mr-2 rounded-full bg-[var(--color-primary)] px-3 py-1.5 text-[12px] font-bold text-white transition hover:opacity-90 active:scale-95"
@@ -791,7 +815,7 @@ function Dashboard() {
                 
                 {filteredResumes.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="py-16 text-center">
+                    <td colSpan="5" className="py-16 text-center">
                       <p className="text-base text-slate-500 font-medium tracking-wide">No documents found. Click 'Create New' to build your resume.</p>
                     </td>
                   </tr>
@@ -814,19 +838,19 @@ function Dashboard() {
                     <span>PRIMARY</span>
                   </div>
                 )}
+                
                 <div 
                   onClick={() => navigate(`/resume-builder?id=${resume.id}`)}
-                  className="aspect-[1/1.3] w-full bg-white relative border-b border-slate-100 cursor-pointer overflow-hidden group/preview"
+                  className="relative p-3 w-full overflow-hidden bg-slate-50 group-hover:bg-slate-100/50 transition-all duration-300"
                 >
-                  <ResumeContentPreview doc={resume.resume_full_documents?.[0]?.document_json} />
+                  <ResumeThumbnail 
+                    resume={resume} 
+                    documentJson={resume.resume_full_documents?.[0]?.document_json} 
+                  />
                   
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-x-0 bottom-0 top-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-900/40 opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover/preview:opacity-100">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); navigate(`/resume-builder?id=${resume.id}`); }}
-                      className="flex items-center gap-2 rounded-full bg-white px-5 py-2 text-[12px] font-bold text-slate-900 shadow-xl transition hover:bg-[var(--color-primary)] hover:text-white active:scale-95"
-                    >
-                      <FiEdit3 />
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 z-10 hidden items-center justify-center bg-black/5 transition-all group-hover:flex">
+                    <button className="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-lg ring-1 ring-black/5 transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                       Open Editor
                     </button>
                   </div>
@@ -834,7 +858,7 @@ function Dashboard() {
 
                 
                 {/* Fixed Action Menu on hover over image */}
-                <div className="absolute top-2 right-2 z-20 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 items-center bg-white/95 backdrop-blur pb-1 pl-1 pr-1 pt-1 rounded-lg shadow-sm border border-slate-200">
+                <div className="absolute top-2 right-2 z-20 flex gap-1.5 opacity-100 lg:opacity-0 transition-opacity lg:group-hover:opacity-100 items-center bg-white/95 backdrop-blur pb-1 pl-1 pr-1 pt-1 rounded-lg shadow-sm border border-slate-200">
                   <button 
                     onClick={(e) => handlePin(resume.id, resume.is_primary, e)} 
                     className={`rounded p-1.5 transition ${resume.is_primary ? 'text-amber-500' : 'text-slate-400 hover:text-slate-700'}`} 
@@ -877,12 +901,25 @@ function Dashboard() {
                         <h3 className="truncate text-[14px] font-bold text-slate-900">{resume.title || 'Untitled Document'}</h3>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setEditingResumeId(resume.id); setEditingTitle(resume.title); }}
-                          className="opacity-0 group-hover/title:opacity-100 p-0.5 text-slate-400 hover:text-[var(--color-primary)] transition shrink-0"
+                          className="opacity-100 lg:opacity-0 lg:group-hover/title:opacity-100 p-0.5 text-slate-400 hover:text-[var(--color-primary)] transition shrink-0"
                         >
                           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  {/* Brief Status Area */}
+                  <div className="mt-2 h-[20px] flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`h-1.5 w-1.5 rounded-full ${resume.resume_status === 'published' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                        {resume.resume_status || 'draft'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-300 font-medium">
+                      {new Date(resume.updated_at).toLocaleDateString()}
+                    </span>
                   </div>
 
                   {/* Job Target Info */}
@@ -911,19 +948,9 @@ function Dashboard() {
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                    <span>{getRelativeTime(resume.updated_at)}</span>
-                    <div 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        navigate(`/resume-builder?id=${resume.id}&action=download`);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500 hover:bg-slate-50 hover:text-[var(--color-primary)] cursor-pointer border border-slate-200 shadow-sm transition"
-                      title="Change Template"
-                    >
-                      <TemplateMiniPreview template={resume.template_name} />
-                      <span className="leading-none">{resume.template_name === 'modern' ? 'Modern Split' : resume.template_name === 'minimal' ? 'Minimalist' : 'Classic ATS'}</span>
-                    </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-400">{getRelativeTime(resume.updated_at)}</span>
+                    <TemplateBadge templateName={resume.template_name} />
                   </div>
                 </div>
               </div>
@@ -939,12 +966,15 @@ function Dashboard() {
       </div>
 
       {jobModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
-          <div className="w-full max-w-md scale-100 rounded-3xl bg-white p-6 shadow-2xl transition-transform animate-in zoom-in-95">
-            <h3 className="text-xl font-bold text-slate-900">Link Target Job</h3>
-            <p className="mt-2 text-sm text-slate-500">Select a tracked job to naturally associate it with this resume layout.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-8">
+          <div className="w-full max-w-md max-h-[90vh] flex flex-col scale-100 rounded-3xl bg-white shadow-2xl transition-transform animate-in zoom-in-95 overflow-hidden">
+            <div className="p-6 pb-0">
+              <h3 className="text-xl font-bold text-slate-900">Link Target Job</h3>
+              <p className="mt-2 text-sm text-slate-500">Select a tracked job to naturally associate it with this resume layout.</p>
+            </div>
             
-            <div className="mt-5 max-h-80 overflow-y-auto space-y-4 rounded-xl border border-slate-100 p-2">
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1" data-lenis-prevent>
+              <div className="space-y-4 rounded-xl border border-slate-100 p-2">
               {!isAddingNewJobInModal ? (
                 <>
                   <div className="flex items-center justify-between px-2 mb-2">
@@ -1029,24 +1059,48 @@ function Dashboard() {
                   </button>
                 </form>
               )}
+              </div>
             </div>
             
-            {!isAddingNewJobInModal && (
-              <div className="mt-4 flex justify-between items-center px-2">
-                <button 
-                  onClick={() => handleLinkJob(null)}
-                  className="text-xs font-bold text-rose-600 hover:underline"
-                >
-                  Unlink Current Job
-                </button>
+            <div className="p-6 border-t border-slate-50 flex justify-between items-center bg-slate-50/50">
+              {!isAddingNewJobInModal ? (
+                <>
+                  <div className="flex flex-col items-start gap-1">
+                    <button 
+                      onClick={() => handleLinkJob(null)}
+                      className="text-xs font-bold text-slate-500 hover:text-slate-700 hover:underline"
+                    >
+                      Unlink Only
+                    </button>
+                    {resumes.find(r => r.id === activeResumeForJob)?.target_job_id && (
+                      <button 
+                        onClick={() => {
+                          const jobId = resumes.find(r => r.id === activeResumeForJob)?.target_job_id;
+                          setJobModalOpen(false);
+                          triggerJobDelete(jobId);
+                        }}
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline"
+                      >
+                        Delete Tracked Job
+                      </button>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setJobModalOpen(false)}
+                    className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
+                  >
+                    Close
+                  </button>
+                </>
+              ) : (
                 <button 
                   onClick={() => setJobModalOpen(false)}
-                  className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
+                  className="rounded-xl bg-slate-100 px-8 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200 w-full"
                 >
-                  Close
+                  Close Modal
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
