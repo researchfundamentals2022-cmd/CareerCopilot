@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { FiEdit3, FiLayout, FiBookmark, FiLogOut, FiPlus } from "react-icons/fi";
 import { 
   BsGrid, 
@@ -8,6 +8,7 @@ import {
   BsSearch,
   BsPlusCircle
 } from "react-icons/bs";
+import { IoFlashOutline } from "react-icons/io5";
 import ResumeThumbnail from "../components/dashboard/ResumeThumbnail";
 import { supabase } from "../services/supabase";
 import { 
@@ -114,13 +115,24 @@ const ResumeContentPreview = ({ doc, resume }) => {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState(null);
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("list"); // Default to list view for clean experience
+  const [viewMode, setViewMode] = useState("list"); 
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+
+  // Sync active tab with query params
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "jobs") {
+      setActiveTab("jobs");
+    } else {
+      setActiveTab("all");
+    }
+  }, [searchParams]);
   
   // Job Linking Modal State
   const [jobModalOpen, setJobModalOpen] = useState(false);
@@ -600,13 +612,11 @@ function Dashboard() {
               </svg>
             </button>
             <button 
-              onClick={() => navigate("/onboarding")}
+              onClick={() => navigate("/connect-gemini")}
               className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Manage Profile
+              <IoFlashOutline className="h-4 w-4 text-[var(--color-primary)] shrink-0" />
+              Gemini API Key
             </button>
             <button 
               onClick={() => setCreateModalOpen(true)}

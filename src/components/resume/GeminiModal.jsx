@@ -104,10 +104,12 @@ function getInitialSummaryForm(userData = {}, aiContext = null) {
     .filter(Boolean)
     .join(", ");
 
+  const onboarding = userData?.onboarding || {};
+
   return {
-    targetRole: seed.targetRole || userData?.targetRole || "",
-    currentStatus: seed.currentStatus || userData?.currentStatus || "",
-    education: seed.education || educationText || "",
+    targetRole: seed.targetRole || onboarding.targetRole || userData?.targetRole || "",
+    currentStatus: seed.currentStatus || onboarding.currentStatus || userData?.currentStatus || "",
+    education: seed.education || onboarding.education || educationText || "",
     skills: seed.skills || skillsText || "",
     careerGoal: seed.careerGoal || "",
     tone: seed.tone || "Professional",
@@ -127,10 +129,7 @@ function getInitialProjectForm(userData = {}, aiContext = null) {
       normalizeListToText(targetProject?.technologies) ||
       normalizeListToText(targetProject?.techStack) ||
       "",
-    role: seed.role || targetProject?.role || "",
-    problemSolved:
-      seed.problemSolved || seed.description || targetProject?.description || "",
-    outcome: seed.outcome || targetProject?.outcome || "",
+    description: seed.description || targetProject?.description || "",
     tone: seed.tone || targetProject?.tone || "Professional",
   };
 }
@@ -160,7 +159,6 @@ function getInitialExperienceForm(userData = {}, aiContext = null) {
       targetExperience?.description ||
       "",
     toolsUsed: seed.toolsUsed || targetExperience?.toolsUsed || "",
-    outcome: seed.outcome || targetExperience?.outcome || "",
     tone: seed.tone || targetExperience?.tone || "Professional",
   };
 }
@@ -325,9 +323,9 @@ function GeminiModal({
 
   const summaryValidation = useMemo(() => {
     if (!isSummarySection) return "";
-    if (!summaryForm.targetRole.trim()) return "Target role is required.";
+    if (!summaryForm.targetRole?.trim()) return "Primary Profession / Field missing from profile. Please update onboarding.";
     if (!summaryForm.skills.trim()) return "Top skills are required.";
-    if (!summaryForm.careerGoal.trim()) return "Career goal is required.";
+    if (!summaryForm.careerGoal.trim()) return "Tell us about yourself first.";
     return "";
   }, [isSummarySection, summaryForm]);
 
@@ -335,8 +333,7 @@ function GeminiModal({
     if (!isProjectsSection) return "";
     if (!projectForm.title.trim()) return "Project title is required.";
     if (!projectForm.technologies.trim()) return "Technologies used are required.";
-    if (!projectForm.problemSolved.trim()) return "Problem solved is required.";
-    if (!projectForm.outcome.trim()) return "Outcome / result is required.";
+    if (!projectForm.description.trim()) return "Project description is required.";
     return "";
   }, [isProjectsSection, projectForm]);
 
@@ -346,10 +343,9 @@ function GeminiModal({
     if (!experienceForm.company.trim())
       return "Company / organization is required.";
     if (!experienceForm.responsibilities.trim())
-      return "Responsibilities are required.";
+      return "Job description / Work details are required.";
     if (!experienceForm.toolsUsed.trim())
       return "Tools / technologies used are required.";
-    if (!experienceForm.outcome.trim()) return "Outcome / impact is required.";
     return "";
   }, [isExperienceSection, experienceForm]);
 
@@ -553,30 +549,31 @@ function GeminiModal({
               </div>
 
               {isSummarySection ? (
-                <div className="space-y-3">
-                  <CompactField label="Target Role" required>
-                    <input
-                      type="text"
-                      value={summaryForm.targetRole}
-                      onChange={(e) =>
-                        handleSummaryFieldChange("targetRole", e.target.value)
-                      }
-                      placeholder="Frontend Developer Intern"
-                      className={inputClassName()}
-                    />
-                  </CompactField>
-
-                  <CompactField label="Current Status">
-                    <input
-                      type="text"
-                      value={summaryForm.currentStatus}
-                      onChange={(e) =>
-                        handleSummaryFieldChange("currentStatus", e.target.value)
-                      }
-                      placeholder="Final-year B.Tech student"
-                      className={inputClassName()}
-                    />
-                  </CompactField>
+                <div className="space-y-4">
+                  {/* Automated Context Note */}
+                  <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4 transition-all hover:bg-violet-50">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 rounded-full bg-violet-100 p-1.5 text-[var(--color-primary)]">
+                        <Sparkles size={14} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-violet-600">
+                          Profile Context Applied
+                        </p>
+                        <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">
+                          Generating based on your profile as a{" "}
+                          <span className="font-bold text-slate-900">{userData.onboarding?.targetRole || "Professional"}</span>
+                          {userData.onboarding?.experienceLevel ? ` (${userData.onboarding.experienceLevel})` : ""}
+                          {userData.onboarding?.currentStatus ? ` in ${userData.onboarding.currentStatus} status.` : "."}
+                        </p>
+                        {userData.onboarding?.education && (
+                          <p className="mt-1.5 text-[12px] text-slate-500 italic">
+                            Background: {userData.onboarding.education}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   <CompactField label="Top Skills" required>
                     <textarea
@@ -585,57 +582,43 @@ function GeminiModal({
                       onChange={(e) =>
                         handleSummaryFieldChange("skills", e.target.value)
                       }
-                      placeholder="React, JavaScript, Python, SQL"
+                      placeholder="e.g. React, JavaScript, Project Management, SEO..."
                       className={textareaClassName()}
                     />
                   </CompactField>
 
-                  <CompactField label="Career Goal" required>
+                  <CompactField label="Describe yourself / What are you?" required>
                     <textarea
-                      rows={3}
+                      rows={4}
                       value={summaryForm.careerGoal}
                       onChange={(e) =>
                         handleSummaryFieldChange("careerGoal", e.target.value)
                       }
-                      placeholder="Looking for a software engineering internship..."
+                      placeholder="e.g. I am a passionate developer who loves building user-centric products and solving complex problems..."
                       className={textareaClassName()}
                     />
                   </CompactField>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <CompactField label="Education">
-                      <textarea
-                        rows={5}
-                        value={summaryForm.education}
-                        onChange={(e) =>
-                          handleSummaryFieldChange("education", e.target.value)
-                        }
-                        placeholder="B.Tech in CSE..."
-                        className={textareaClassName()}
-                      />
-                    </CompactField>
-
-                    <CompactField label="Tone">
-                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
-                        <div className="flex gap-2 px-1">
-                          {SUMMARY_TONE_OPTIONS.map((tone) => (
-                            <button
-                              key={tone}
-                              type="button"
-                              onClick={() => handleSummaryFieldChange("tone", tone)}
-                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                                summaryForm.tone === tone
-                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
-                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                              }`}
-                            >
-                              {tone}
-                            </button>
-                          ))}
-                        </div>
+                  <CompactField label="Summary Tone">
+                    <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                      <div className="flex gap-2 px-1">
+                        {SUMMARY_TONE_OPTIONS.map((tone) => (
+                          <button
+                            key={tone}
+                            type="button"
+                            onClick={() => handleSummaryFieldChange("tone", tone)}
+                            className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                              summaryForm.tone === tone
+                                ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {tone}
+                          </button>
+                        ))}
                       </div>
-                    </CompactField>
-                  </div>
+                    </div>
+                  </CompactField>
                 </div>
               ) : isProjectsSection ? (
                 <div className="space-y-3">
@@ -679,75 +662,48 @@ function GeminiModal({
 
                   <CompactField label="Technologies Used" required>
                     <textarea
-                      rows={3}
+                      rows={2}
                       value={projectForm.technologies}
                       onChange={(e) =>
                         handleProjectFieldChange("technologies", e.target.value)
                       }
-                      placeholder="React, Tailwind CSS, Node.js, Supabase"
+                      placeholder="e.g. React, Node.js, Python, SQL..."
                       className={textareaClassName()}
                     />
                   </CompactField>
 
-                  <CompactField label="Your Role / Contribution">
+                  <CompactField label="Project Description" required>
                     <textarea
-                      rows={3}
-                      value={projectForm.role}
+                      rows={6}
+                      value={projectForm.description}
                       onChange={(e) =>
-                        handleProjectFieldChange("role", e.target.value)
+                        handleProjectFieldChange("description", e.target.value)
                       }
-                      placeholder="Built UI, integrated backend APIs, implemented authentication..."
+                      placeholder="Describe what the project is, your specific role, the problems you solved, and the final impact or result..."
                       className={textareaClassName()}
                     />
                   </CompactField>
 
-                  <CompactField label="Problem Solved" required>
-                    <textarea
-                      rows={3}
-                      value={projectForm.problemSolved}
-                      onChange={(e) =>
-                        handleProjectFieldChange("problemSolved", e.target.value)
-                      }
-                      placeholder="Helped users create ATS-friendly resumes easily..."
-                      className={textareaClassName()}
-                    />
-                  </CompactField>
-
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <CompactField label="Outcome / Result" required>
-                      <textarea
-                        rows={4}
-                        value={projectForm.outcome}
-                        onChange={(e) =>
-                          handleProjectFieldChange("outcome", e.target.value)
-                        }
-                        placeholder="Improved workflow, reduced manual effort, delivered responsive experience..."
-                        className={textareaClassName()}
-                      />
-                    </CompactField>
-
-                    <CompactField label="Tone">
-                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
-                        <div className="flex gap-2 px-1">
-                          {PROJECT_TONE_OPTIONS.map((tone) => (
-                            <button
-                              key={tone}
-                              type="button"
-                              onClick={() => handleProjectFieldChange("tone", tone)}
-                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                                projectForm.tone === tone
-                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
-                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                              }`}
-                            >
-                              {tone}
-                            </button>
-                          ))}
-                        </div>
+                  <CompactField label="Tone">
+                    <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                      <div className="flex gap-2 px-1">
+                        {PROJECT_TONE_OPTIONS.map((tone) => (
+                          <button
+                            key={tone}
+                            type="button"
+                            onClick={() => handleProjectFieldChange("tone", tone)}
+                            className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                              projectForm.tone === tone
+                                ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {tone}
+                          </button>
+                        ))}
                       </div>
-                    </CompactField>
-
-                  </div>
+                    </div>
+                  </CompactField>
                 </div>
               ) : isExperienceSection ? (
                 <div className="space-y-3">
@@ -806,9 +762,9 @@ function GeminiModal({
                     </CompactField>
                   </div>
 
-                  <CompactField label="Responsibilities" required>
+                  <CompactField label="Job Description / What did you do?" required>
                     <textarea
-                      rows={4}
+                      rows={6}
                       value={experienceForm.responsibilities}
                       onChange={(e) =>
                         handleExperienceFieldChange(
@@ -816,7 +772,7 @@ function GeminiModal({
                           e.target.value
                         )
                       }
-                      placeholder="Describe the work handled, ownership, tasks completed, and contribution."
+                      placeholder="Describe your daily tasks, specific projects you handled, and the key results or impact you achieved..."
                       className={textareaClassName()}
                     />
                   </CompactField>
@@ -828,46 +784,31 @@ function GeminiModal({
                       onChange={(e) =>
                         handleExperienceFieldChange("toolsUsed", e.target.value)
                       }
-                      placeholder="React, FastAPI, Supabase, Python, SQL"
+                      placeholder="e.g. React, Python, SQL, Jira, Docker..."
                       className={textareaClassName()}
                     />
                   </CompactField>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <CompactField label="Outcome / Impact" required>
-                      <textarea
-                        rows={4}
-                        value={experienceForm.outcome}
-                        onChange={(e) =>
-                          handleExperienceFieldChange("outcome", e.target.value)
-                        }
-                        placeholder="Explain the result, improvement, optimization, delivery, or support provided."
-                        className={textareaClassName()}
-                      />
-                    </CompactField>
-
-                    <CompactField label="Tone">
-                      <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
-                        <div className="flex gap-2 px-1">
-                          {EXPERIENCE_TONE_OPTIONS.map((tone) => (
-                            <button
-                              key={tone}
-                              type="button"
-                              onClick={() => handleExperienceFieldChange("tone", tone)}
-                              className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                                experienceForm.tone === tone
-                                  ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
-                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                              }`}
-                            >
-                              {tone}
-                            </button>
-                          ))}
-                        </div>
+                  <CompactField label="Tone">
+                    <div className="mask-horizontal relative -mx-1 flex overflow-x-auto pb-2 scrollbar-hide">
+                      <div className="flex gap-2 px-1">
+                        {EXPERIENCE_TONE_OPTIONS.map((tone) => (
+                          <button
+                            key={tone}
+                            type="button"
+                            onClick={() => handleExperienceFieldChange("tone", tone)}
+                            className={`whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                              experienceForm.tone === tone
+                                ? "border-[var(--color-primary)] bg-violet-50 text-[var(--color-primary)]"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {tone}
+                          </button>
+                        ))}
                       </div>
-                    </CompactField>
-
-                  </div>
+                    </div>
+                  </CompactField>
                 </div>
               ) : isCertificationsSection ? (
                 <div className="space-y-3">
@@ -953,6 +894,10 @@ function GeminiModal({
                     </CompactField>
 
                   </div>
+                  
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500 italic">
+                    <span className="font-bold text-slate-600">Note:</span> Due to resume single page constraints, descriptions are removed for Certifications and Achievements to ensure professional brevity.
+                  </p>
                 </div>
               ) : isAchievementsSection ? (
                 <div className="space-y-3">
@@ -1038,6 +983,10 @@ function GeminiModal({
                       className={textareaClassName()}
                     />
                   </CompactField>
+
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500 italic">
+                    <span className="font-bold text-slate-600">Note:</span> Due to resume single page constraints, descriptions are removed for Certifications and Achievements to ensure professional brevity.
+                  </p>
                 </div>
               ) : isCustomSection ? (
                 <div className="space-y-3">

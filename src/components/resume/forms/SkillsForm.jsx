@@ -11,6 +11,7 @@ const SKILL_CATEGORIES = [
   "Cloud / DevOps",
   "Databases",
   "Tools / Platforms",
+  "Quality Assurance / Testing",
   "Soft Skills",
 ];
 
@@ -81,6 +82,16 @@ const SKILL_SUGGESTIONS = {
     "Figma",
     "Google Colab",
     "Jupyter Notebook",
+  ],
+  "Quality Assurance / Testing": [
+    "Manual Testing",
+    "Automation Testing",
+    "Selenium",
+    "Jest / Vitest",
+    "Cypress",
+    "Unit Testing",
+    "API Testing",
+    "Bug Tracking (Jira)",
   ],
   "Soft Skills": [
     "Communication",

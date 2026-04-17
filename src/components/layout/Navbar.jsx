@@ -1,7 +1,17 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { IoArrowBack, IoMenu, IoClose } from "react-icons/io5";
-import { FiChevronDown, FiLayout, FiBookmark, FiLogOut } from "react-icons/fi";
+import { useState, useEffect, useRef } from "react";
+import { 
+  IoArrowBack, 
+  IoMenu, 
+  IoClose,
+  IoChevronDown,
+  IoSettingsOutline,
+  IoFlashOutline,
+  IoGridOutline,
+  IoBriefcaseOutline,
+  IoLogOutOutline,
+  IoRocketOutline
+} from "react-icons/io5";
 import { supabase } from "../../services/supabase";
 import Logo from "../../assets/Carrer_Copilot_Logo.png";
 
@@ -12,6 +22,24 @@ function Navbar() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const dropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setShowMobileMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const loadProfile = async (sessionUser) => {
@@ -94,7 +122,7 @@ function Navbar() {
 
         <div className="flex items-center gap-4 relative">
           {user ? (
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 className={`flex items-center gap-3 rounded-full border bg-white/80 py-2 pl-2 pr-5 text-sm font-semibold text-slate-700 transition-all duration-300 backdrop-blur-sm hover:shadow-md ${
@@ -121,7 +149,7 @@ function Navbar() {
                     {profile?.full_name || "Account"}
                   </span>
                 </div>
-                <FiChevronDown
+                <IoChevronDown
                   className={`text-slate-400 transition-transform duration-300 ${
                     showDropdown ? "rotate-180" : ""
                   }`}
@@ -129,7 +157,7 @@ function Navbar() {
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-white/40 bg-white/80 p-1.5 shadow-[0_20px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute right-0 top-full z-50 mt-3 w-64 overflow-hidden rounded-2xl border border-white/40 bg-white/98 p-1.5 shadow-[0_20px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="mb-1 rounded-xl bg-slate-50/50 px-4 py-3 border border-slate-100/50">
                     <p className="truncate text-[13px] font-bold text-slate-900 capitalize">
                       {profile?.full_name || "User"}
@@ -144,23 +172,31 @@ function Navbar() {
                       onClick={() => setShowDropdown(false)}
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary)] hover:text-white group bg-indigo-50/30 mb-1"
                     >
-                      <FiLayout className="text-lg text-[var(--color-primary)] transition-colors group-hover:text-white" />
-                      Edit Profile
+                      <IoRocketOutline className="text-lg text-[var(--color-primary)] transition-colors group-hover:text-white" />
+                      Onboarding Page
+                    </Link>
+                    <Link
+                      to="/connect-gemini"
+                      onClick={() => setShowDropdown(false)}
+                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-slate-700 transition-all hover:bg-[var(--color-primary)] hover:text-white group"
+                    >
+                      <IoFlashOutline className="text-lg text-slate-400 transition-colors group-hover:text-white" />
+                      Connect Gemini
                     </Link>
                     <Link
                       to="/dashboard"
                       onClick={() => setShowDropdown(false)}
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-slate-700 transition-all hover:bg-[var(--color-primary)] hover:text-white group"
                     >
-                      <FiLayout className="text-lg text-slate-400 transition-colors group-hover:text-white" />
+                      <IoGridOutline className="text-lg text-slate-400 transition-colors group-hover:text-white" />
                       Dashboard
                     </Link>
                     <Link
-                      to="/saved-jobs"
+                      to="/dashboard?tab=jobs"
                       onClick={() => setShowDropdown(false)}
                       className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-slate-700 transition-all hover:bg-[var(--color-primary)] hover:text-white group"
                     >
-                      <FiBookmark className="text-lg text-slate-400 transition-colors group-hover:text-white" />
+                      <IoBriefcaseOutline className="text-lg text-slate-400 transition-colors group-hover:text-white" />
                       Tracked Jobs
                     </Link>
                     <div className="my-1.5 h-px bg-slate-100 mx-2" />
@@ -168,7 +204,7 @@ function Navbar() {
                       onClick={handleLogout}
                       className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-red-600 transition-all hover:bg-red-50"
                     >
-                      <FiLogOut className="text-lg" />
+                      <IoLogOutOutline className="text-lg" />
                       Sign out
                     </button>
                   </div>
@@ -204,7 +240,7 @@ function Navbar() {
       </div>
 
       {showMobileMenu && location.pathname === "/" && (
-        <div className="md:hidden absolute left-0 right-0 top-full border-b border-slate-200 bg-white/95 px-6 py-6 shadow-xl backdrop-blur-md">
+        <div ref={mobileMenuRef} className="md:hidden absolute left-0 right-0 top-full border-b border-slate-200 bg-white/99 px-6 py-6 shadow-xl backdrop-blur-md">
           <nav className="flex flex-col gap-6">
             <a
               href="#why-us"

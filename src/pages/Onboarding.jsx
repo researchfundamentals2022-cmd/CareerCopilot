@@ -114,16 +114,6 @@ function Onboarding() {
 
       if (onboardingError) throw onboardingError;
 
-      // 2. Sync with Profiles Table (for Dashboard Display)
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ full_name: formData.fullName })
-        .eq("id", user.id);
-
-      if (profileError) {
-        console.warn("Name sync to profiles failed, but onboarding was saved.");
-      }
-
       localStorage.setItem(
         "career_copilot_onboarding_data",
         JSON.stringify(formData)

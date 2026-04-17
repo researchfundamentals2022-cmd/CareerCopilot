@@ -126,19 +126,13 @@ function ResumeBuilder() {
     !!resumeId &&
     !!activeProjectionJobId;
 
-  const getCurrentStatus = () => {
+  const getOnboardingData = () => {
     try {
       const raw = localStorage.getItem("career_copilot_onboarding_data");
-      if (!raw) return "Student";
-
-      const parsed = JSON.parse(raw);
-      return (
-        (typeof parsed?.currentStatus === "string" &&
-          parsed.currentStatus.trim()) ||
-        "Student"
-      );
+      if (!raw) return {};
+      return JSON.parse(raw);
     } catch {
-      return "Student";
+      return {};
     }
   };
 
@@ -1769,7 +1763,7 @@ function ResumeBuilder() {
           achievements: Array.isArray(resumeData.achievements)
             ? resumeData.achievements
             : [],
-          currentStatus: getCurrentStatus(),
+          onboarding: getOnboardingData(),
         }}
       />
     </section>
