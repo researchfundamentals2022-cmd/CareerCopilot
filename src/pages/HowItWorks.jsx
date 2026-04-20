@@ -10,6 +10,7 @@ import {
   IoRocketOutline 
 } from "react-icons/io5";
 import { useAuth } from "../contexts/AuthContext";
+import SEO from "../components/common/SEO";
 
 function HowItWorks() {
   const { user } = useAuth();
@@ -70,6 +71,11 @@ function HowItWorks() {
 
   return (
     <div className="glass-morphism-bg min-h-screen px-6 py-12 md:px-12 lg:px-20">
+      <SEO 
+        title="How It Works | Career Copilot Guide"
+        description="Learn how to build your AI-powered resume in 3 simple steps. Optimized for students and freshers entering the job market."
+        path="/how-it-works"
+      />
       <div className="relative z-10 mx-auto max-w-5xl">
         <div className="mb-12 text-center">
           <span className="animate-float inline-flex rounded-full border border-violet-100 bg-white/80 px-4 py-1 text-sm font-bold text-[var(--color-primary)] shadow-sm backdrop-blur-md">
