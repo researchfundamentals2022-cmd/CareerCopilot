@@ -34,11 +34,14 @@ function Onboarding() {
         return;
       }
 
+      // Relaxing strict redirect to allow users to view/edit onboarding if they navigate here
+      /*
       const onboardingDone = localStorage.getItem("career_copilot_onboarding_done");
       if (onboardingDone === "true") {
         navigate("/dashboard", { replace: true });
         return;
       }
+      */
 
       try {
         const { data: onboardingData, error } = await supabase
@@ -52,7 +55,7 @@ function Onboarding() {
             fullName: onboardingData.full_name || "",
             education: onboardingData.education || "",
             currentStatus: onboardingData.current_status || "",
-            target_role: onboardingData.target_role || "",
+            targetRole: onboardingData.target_role || "",
             experienceLevel: onboardingData.experience_level || "",
             mainGoal: onboardingData.main_goal || "",
           };
@@ -60,8 +63,10 @@ function Onboarding() {
           localStorage.setItem("career_copilot_onboarding_data", JSON.stringify(processed));
           localStorage.setItem("career_copilot_onboarding_done", "true");
           
-          navigate("/dashboard", { replace: true });
-          return;
+          // Only auto-redirect if we don't have a force flag or if we are just "checking"
+          // For now, let's allow them to see the page if they navigate here
+          // navigate("/dashboard", { replace: true }); 
+          // return;
         } else {
           const savedData = localStorage.getItem("career_copilot_onboarding_data");
           if (savedData) {
