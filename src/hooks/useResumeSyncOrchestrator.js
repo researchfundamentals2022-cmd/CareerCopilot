@@ -15,6 +15,7 @@ export function useResumeSyncOrchestrator({
   setLatestProjectedVersion,
 }) {
   const isSyncingRef = useRef(false);
+  const pendingSyncReasonRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const lastProjectedHashRef = useRef("");
   const latestProjectedVersionRef = useRef(null);
@@ -31,18 +32,19 @@ export function useResumeSyncOrchestrator({
     if (!resumeId || !userId) return false;
 
     if (isSyncingRef.current) {
-      console.log(`[SyncOrchestrator] 🛑 BLOCKED (Mutex locked). Reason: ${reason}`);
-      return false; // Safely abort since a sync is already running
+      // If a sync is already in flight, queue this reason to run immediately after.
+      // This ensures "Review" navigation never gets dropped.
+      pendingSyncReasonRef.current = reason;
+      return false;
     }
 
     const { resumeData, customSections } = getLatestResumeData();
     const currentHash = getResumeContentHash(resumeData, customSections);
 
     if (currentHash === lastProjectedHashRef.current) {
-      console.log(`[SyncOrchestrator] 🛑 NO-OP (Hash matches). Reason: ${reason}`);
       setProjectionStatus?.("up_to_date");
       setProjectionMessage?.("Preview is up to date.");
-      return true; // Resolves as successful because state is correct
+      return true;
     }
 
     try {
@@ -50,7 +52,6 @@ export function useResumeSyncOrchestrator({
       setProjectionStatus?.("updating");
       setProjectionMessage?.("Updating preview...");
 
-      
       // Perform the actual API projection step without regenerating fragments
       const result = await saveResumeSectionsBatch({
         sectionKeys: [], // Only trigger projection, fragmented saves happened earlier
@@ -66,25 +67,28 @@ export function useResumeSyncOrchestrator({
         setLatestProjectedVersion?.(result.version);
         latestProjectedVersionRef.current = result.version;
         lastProjectedHashRef.current = currentHash;
-
       }
 
       setProjectionStatus?.("up_to_date");
       setProjectionMessage?.("Preview is up to date.");
       return true;
     } catch (e) {
-      console.error(`[SyncOrchestrator] ❌ FAILED. Reason: ${reason}`, e);
       setProjectionStatus?.("error");
       setProjectionMessage?.("Failed to update preview.");
       return false;
     } finally {
       isSyncingRef.current = false;
+      
+      // If a request was queued while we were busy, run it now.
+      if (pendingSyncReasonRef.current) {
+        const nextReason = pendingSyncReasonRef.current;
+        pendingSyncReasonRef.current = null;
+        executeSync(nextReason);
+      }
     }
   };
 
   const requestSync = useCallback((reason, options = { immediate: false }) => {
-
-    
     // Always clear the existing debounce timer if a new request comes in
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
