@@ -1,12 +1,17 @@
 # https://www.robotstxt.org/robotstxt.html
 
 User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /builder
-Disallow: /resume-builder
+# Private Application Pages
+Disallow: /dashboard/
+Disallow: /resume-builder/
+Disallow: /settings/
 Disallow: /login
 Disallow: /signup
 Disallow: /auth/callback
+
+# Public Pages
+Allow: /
+Allow: /how-it-works
+Allow: /index.html
 
 Sitemap: https://www.careercopilot.cognisysai.com/sitemap.xml

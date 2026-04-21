@@ -17,6 +17,7 @@ const SEO = ({
       <link rel="canonical" href={url} />
 
       {/* Open Graph / Facebook */}
+      <meta property="og:site_name" content="Career Copilot" />
       <meta property="og:type" content="website" />
       <meta property="og:url" content={url} />
       <meta property="og:title" content={title} />
