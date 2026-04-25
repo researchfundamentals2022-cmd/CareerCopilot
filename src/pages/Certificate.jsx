@@ -169,7 +169,16 @@ const Certificate = () => {
     <div className="min-h-screen bg-[#f8fafc] py-6 md:py-10 px-4" ref={containerRef}>
       {/* Global CSS for PDF Printing */}
       <style>{`
+        @page {
+          size: landscape;
+          margin: 10mm !important; /* Safe buffer to prevent printer from trimming borders */
+        }
         @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+          }
           body * {
             visibility: hidden;
             -webkit-print-color-adjust: exact !important;
@@ -180,16 +189,22 @@ const Certificate = () => {
           }
           #cert-canvas {
             position: absolute !important;
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) scale(1) !important;
+            left: 0 !important;
+            top: 0 !important;
+            transform: scale(0.95) !important;
+            transform-origin: top left !important;
             margin: 0 !important;
-            padding: 0 !important;
             box-shadow: none !important;
           }
-          @page {
-            size: A4 landscape;
-            margin: 0;
+          /* This pseudo-element forces the purple border to print even if the browser strips background colors for ink saving */
+          #cert-canvas::after {
+            content: "" !important;
+            position: absolute !important;
+            inset: 0 !important;
+            border: 12px solid #35008B !important;
+            box-sizing: border-box !important;
+            pointer-events: none !important;
+            z-index: 50 !important;
           }
           .no-print {
             display: none !important;
@@ -235,7 +250,7 @@ const Certificate = () => {
             style={{ 
               width: '950px', 
               height: '670px', 
-              padding: '12px', 
+              padding: '12px',
               background: '#35008B',
               transform: `scale(${scale})`,
               transformOrigin: 'top left',
@@ -244,7 +259,7 @@ const Certificate = () => {
               left: 0
             }}
           >
-            <div className="w-full h-full bg-white relative flex flex-col items-center p-10 overflow-hidden">
+            <div className="w-full h-full bg-white relative flex flex-col items-center p-10 overflow-hidden shadow-[inset_0_0_0_1px_rgba(251,191,36,0.2)]">
               
               {/* Backdrop - High Precision Centering */}
               <div 
