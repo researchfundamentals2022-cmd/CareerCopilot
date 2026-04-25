@@ -167,6 +167,36 @@ const Certificate = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-6 md:py-10 px-4" ref={containerRef}>
+      {/* Global CSS for PDF Printing */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #cert-canvas, #cert-canvas * {
+            visibility: visible;
+          }
+          #cert-canvas {
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+          }
+          @page {
+            size: A4 landscape;
+            margin: 0;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       <div className="max-w-[1000px] mx-auto flex flex-col items-center">
         
         {/* Controls */}
