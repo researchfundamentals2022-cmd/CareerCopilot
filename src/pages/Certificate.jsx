@@ -6,6 +6,7 @@ import { TbCertificate } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabase";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import logo from "../assets/Carrer_Copilot_Logo.png";
 
 const Certificate = () => {
@@ -80,7 +81,56 @@ const Certificate = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, [isChecking, isUnlocked]);
   
-  const handleDownloadPDF = () => window.print();
+  const handleDownloadPDF = async () => {
+    if (!certRef.current) return;
+    try {
+      setIsSharing(true);
+      const canvas = await html2canvas(certRef.current, {
+        scale: 2, // 2x scale perfectly balances crisp A4 printing with minimal file size overhead
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        width: 950,
+        height: 670,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+          const cert = clonedDoc.getElementById("cert-canvas");
+          if (cert) {
+            cert.style.transform = "none";
+            cert.style.position = "fixed";
+            cert.style.top = "0";
+            cert.style.left = "0";
+            cert.style.margin = "0";
+            cert.style.width = "950px";
+            cert.style.height = "670px";
+            const all = cert.querySelectorAll('*');
+            all.forEach(el => {
+              el.style.outline = 'none';
+              el.style.boxShadow = 'none';
+            });
+          }
+        }
+      });
+      
+      // Use JPEG with 95% quality instead of lossless PNG to dramatically reduce PDF file bloat
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4"
+      });
+      // A4 landscape size is exactly 297mm x 210mm
+      pdf.addImage(imgData, "JPEG", 0, 0, 297, 210);
+      pdf.save("Career_Copilot_Certification.pdf");
+      
+    } catch (error) {
+      console.error("PDF export error:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
   
   const handleDownloadPNG = async () => {
     if (!certRef.current) return;
