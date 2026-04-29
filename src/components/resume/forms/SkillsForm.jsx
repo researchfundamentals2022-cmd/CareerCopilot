@@ -461,7 +461,13 @@ function SkillsForm({ value, setResumeData, showValidationErrors = false }) {
                             className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
                           >
                             <option value="">Select category</option>
-                            {SKILL_CATEGORIES.map((category) => (
+                            {SKILL_CATEGORIES.filter((cat) => {
+                              // Only show categories that aren't already selected in OTHER rows
+                              const isAlreadySelected = rows.some(
+                                (r) => r.clientKey !== row.clientKey && r.category === cat
+                              );
+                              return !isAlreadySelected;
+                            }).map((category) => (
                               <option key={category} value={category}>
                                 {category}
                               </option>
@@ -520,30 +526,8 @@ function SkillsForm({ value, setResumeData, showValidationErrors = false }) {
                                 </div>
                               )}
 
-                              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                                <input
-                                  type="text"
-                                  value={row.customSkill}
-                                  onChange={(e) =>
-                                    handleCustomSkillChange(row.clientKey, e.target.value)
-                                  }
-                                  onKeyDown={(e) =>
-                                    handleCustomSkillKeyDown(e, row.clientKey)
-                                  }
-                                  placeholder="Add other skill"
-                                  className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => addCustomSkill(row.clientKey)}
-                                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] bg-white px-4 text-sm font-medium text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/5"
-                                >
-                                  Add
-                                </button>
-                              </div>
-
                               {(effectiveCategory || row.skills.length > 0) && (
-                                <div className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                <div className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                                     {effectiveCategory || "Category"}
                                   </p>
@@ -569,12 +553,50 @@ function SkillsForm({ value, setResumeData, showValidationErrors = false }) {
                                       ))}
                                     </div>
                                   ) : (
-                                    <p className="mt-2 text-sm text-slate-500">
+                                    <p className="mt-2 text-sm text-slate-500 italic">
                                       No skills selected yet.
                                     </p>
                                   )}
                                 </div>
                               )}
+
+                              {row.skills.length > 0 && (
+                                <div className="mt-3 animate-page-entry flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 border border-emerald-100">
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                  </div>
+                                  <p className="text-[13px] font-bold text-emerald-700">
+                                    Great! You have selected {row.skills.length} {row.skills.length === 1 ? "skill" : "skills"} in this category.
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="mt-5 border-t border-slate-100 pt-5">
+                                <p className="mb-2 text-[12px] font-medium text-slate-500 italic">
+                                  Have any other skills which are not mentioned above? Add them manually here:
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={row.customSkill}
+                                    onChange={(e) =>
+                                      handleCustomSkillChange(row.clientKey, e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                      handleCustomSkillKeyDown(e, row.clientKey)
+                                    }
+                                    placeholder="Add manually..."
+                                    className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(53,0,139,0.08)]"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => addCustomSkill(row.clientKey)}
+                                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-white px-4 text-[13px] font-bold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/5 active:scale-95 shadow-sm"
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </div>
                             </>
                           ) : (
                             <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">

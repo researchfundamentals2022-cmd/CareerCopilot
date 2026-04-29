@@ -331,7 +331,7 @@ function EducationForm({ value, setResumeData, showValidationErrors = false }) {
                     </FieldWrapper>
 
                     <FieldWrapper
-                      label="Degree & Major"
+                      label={item.category === "Schooling" ? "Board (SSC / CBSE / ICSE / Other)" : "Degree & Major"}
                       required
                       icon={<BookOpen size={16} />}
                       error={getFieldError(index, "degreeMajor")}
@@ -340,7 +340,7 @@ function EducationForm({ value, setResumeData, showValidationErrors = false }) {
                         type="text"
                         maxLength={100}
                         value={item.degreeMajor || ""}
-                        placeholder="e.g., B.Tech in Computer Science"
+                        placeholder={item.category === "Schooling" ? "e.g., CBSE, ICSE, SSC" : "e.g., B.Tech in Computer Science"}
                         onChange={(e) => {
                           updateEducationItem(item.clientKey, "degreeMajor", e.target.value);
                           setTouched(true);

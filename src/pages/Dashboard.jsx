@@ -20,6 +20,7 @@ import { seedResumeReadModelCache } from "../services/resumeReadModelApi";
 import ConfirmModal from "../components/common/ConfirmModal";
 import JobBoard from "../components/dashboard/JobBoard";
 import { useAuth } from "../contexts/AuthContext";
+import SEO from "../components/common/SEO";
 
 
 const TemplateMiniPreview = ({ template }) => {
@@ -601,6 +602,11 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] px-6 py-10 md:px-12 md:py-16">
+      <SEO 
+        title="Dashboard | Career Copilot" 
+        description="Manage your resumes, track job applications, and optimize your career profile with AI." 
+        path="/dashboard" 
+      />
       <div className="mx-auto max-w-[1200px]">
         
         {/* Header Section */}

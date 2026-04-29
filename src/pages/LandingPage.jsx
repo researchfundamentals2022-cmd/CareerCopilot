@@ -17,6 +17,40 @@ function LandingPage() {
         description="Build a professional, ATS-optimized resume in minutes with Career Copilot. Designed for students and freshers to kickstart their career with AI-powered guidance."
         path="/"
       />
+
+      {/* ✅ FAQ SCHEMA FOR SEARCH DOMINANCE */}
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is Career Copilot?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Career Copilot is an AI-powered resume builder and career assistant developed by Cognisys AI. It helps students and freshers create ATS-optimized resumes in minutes."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does Career Copilot use AI?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Using advanced AI models like Gemini, Career Copilot analyzes your background to suggest better wording, highlight key skills, and optimize your resume for applicant tracking systems (ATS)."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is Career Copilot developed by Cognisys AI?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, Career Copilot is the flagship product of Cognisys AI, designed to bridge the gap between education and employment for students worldwide."
+              }
+            }
+          ]
+        }
+      </script>
       <main>
         <HeroSection />
         <WhyUsSection />

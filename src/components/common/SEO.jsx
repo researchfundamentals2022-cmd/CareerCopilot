@@ -14,6 +14,8 @@ const SEO = ({
       {/* Basic Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={description} />
+      <meta name="keywords" content="career copilot, carer copilot, copilot career, carer pilot, career pilot, AI resume builder, resume builder for students, ATS resume maker, free resume builder, career co pilot, careerpilot" />
+      <meta name="author" content="Cognisys AI" />
       <link rel="canonical" href={url} />
 
       {/* Open Graph / Facebook */}

@@ -18,6 +18,7 @@ import { fetchResumeReadModel, readModelToResumeData } from "../services/resumeR
 import { createResumeVersionSnapshot } from "../services/resumeVersionsApi";
 import { useResumeSyncOrchestrator } from "../hooks/useResumeSyncOrchestrator";
 import { useAuth } from "../contexts/AuthContext";
+import SEO from "../components/common/SEO";
 
 function ResumeBuilder() {
   const { user } = useAuth();
@@ -1102,54 +1103,58 @@ function ResumeBuilder() {
   };
 
   const renderActionButtons = ({ compact = false } = {}) => {
-    const buttonBase =
-      "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
-    const containerClass = compact
-      ? "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end"
-      : "flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end";
+    const btnBase = "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50";
+    
+    const secondaryStyle = `${btnBase} border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 shadow-sm`;
+    
+    const accentStyle = `${btnBase} border border-[var(--color-primary)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5`;
+    
+    const primaryStyle = `${btnBase} bg-[var(--color-primary)] text-white hover:opacity-90 shadow-md hover:shadow-lg`;
 
     return (
-      <div className={containerClass}>
-        <button
-          type="button"
-          onClick={() => navigate("/dashboard")}
-          className={`${buttonBase} border border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
-        >
-          Back to Dashboard
-        </button>
-
-        <button
-          type="button"
-          onClick={handleSaveDraft}
-          disabled={isSaving}
-          className={`${buttonBase} border border-[var(--color-primary)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5`}
-        >
-          {isSaving
-            ? "Saving..."
-            : dirtySections.size > 0
-              ? "Save Draft"
-              : "All Saved"}
-        </button>
-
-        <button
-          type="button"
-          onClick={goToPrevious}
-          disabled={currentStep === 0 || isSaving}
-          className={`${buttonBase} border border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
-        >
-          ← Previous
-        </button>
-
-        {currentStep < allSections.length - 1 && (
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+        {/* Left Side: System Actions */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             type="button"
-            onClick={goToNext}
-            disabled={isSaving}
-            className={`${buttonBase} bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)]`}
+            onClick={() => navigate("/dashboard")}
+            className={secondaryStyle}
           >
-            {isSaving ? "Saving..." : "Next →"}
+            Back to Dashboard
           </button>
-        )}
+
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={isSaving}
+            className={accentStyle}
+          >
+            {isSaving ? "Saving..." : dirtySections.size > 0 ? "Save Draft" : "Saved"}
+          </button>
+        </div>
+
+        {/* Right Side: Navigation */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={goToPrevious}
+            disabled={currentStep === 0 || isSaving}
+            className={secondaryStyle}
+          >
+            ← Previous
+          </button>
+
+          {currentStep < allSections.length - 1 && (
+            <button
+              type="button"
+              onClick={goToNext}
+              disabled={isSaving}
+              className={primaryStyle}
+            >
+              Next →
+            </button>
+          )}
+        </div>
       </div>
     );
   };
@@ -1166,6 +1171,11 @@ function ResumeBuilder() {
 
   return (
     <section className="min-h-screen bg-[var(--color-bg-alt)]">
+      <SEO 
+        title="Resume Builder | Career Copilot" 
+        description="Build your professional, ATS-optimized resume with AI assistance. Step-by-step guidance for students and freshers." 
+        path="/resume-builder" 
+      />
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5 md:px-6 lg:px-8 xl:px-10">
         <div className="mb-5 xl:hidden">
           <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -1502,6 +1512,22 @@ function ResumeBuilder() {
                   />
                 </div>
               )}
+
+            </div>
+
+            <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">
+                    Keep your progress safe
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-muted)]">
+                    Save your latest edits before moving on or generating the final version.
+                  </p>
+                </div>
+
+                {renderActionButtons({ compact: true })}
+              </div>
             </div>
 
             {currentSection?.key !== "review" && (
@@ -1534,21 +1560,6 @@ function ResumeBuilder() {
                 </div>
               </div>
             )}
-
-            <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[var(--color-text)]">
-                    Keep your progress safe
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--color-muted)]">
-                    Save your latest edits before moving on or generating the final version.
-                  </p>
-                </div>
-
-                {renderActionButtons({ compact: true })}
-              </div>
-            </div>
           </main>
         </div>
       </div>

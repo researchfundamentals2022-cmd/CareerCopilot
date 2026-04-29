@@ -60,13 +60,20 @@ function Navbar() {
             </button>
           )}
 
-        <Link to="/" className="flex items-center select-none">
+        <Link 
+          to="/" 
+          className="flex items-center select-none"
+          title="Career Copilot Home"
+        >
           <img
             src={Logo}
-            alt="Career Copilot logo"
+            alt="Career Copilot"
             className="h-10 w-10 object-contain md:h-14 md:w-14"
           />
-          <span className="-ml-1 text-[1.35rem] font-bold tracking-[-0.03em] text-[var(--color-primary)] leading-none md:text-[1.75rem]">
+          <span 
+            className="-ml-1 text-[1.35rem] font-bold tracking-[-0.03em] text-[var(--color-primary)] leading-none md:text-[1.75rem]"
+            aria-label="Career Copilot"
+          >
             areer Copilot
           </span>
         </Link>
