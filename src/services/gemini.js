@@ -126,16 +126,27 @@ export async function runGroqBasicTest(apiKey) {
 
 function interpretAIError(err) {
   const msg = (err?.message || String(err)).toLowerCase();
-  if (msg.includes("busy") || msg.includes("overloaded") || msg.includes("503") || msg.includes("unavailable")) {
-    return "The AI Model is currently busy or overloaded. This is a server-side AI delay, not your fault. Please try again in 5 seconds.";
+
+  if (
+    msg.includes("busy") || 
+    msg.includes("overloaded") || 
+    msg.includes("503") || 
+    msg.includes("unavailable") ||
+    msg.includes("demand") ||
+    msg.includes("temporary")
+  ) {
+    return "The AI is currently helping a lot of people at once! We tried to reach it, but it's still a bit busy. Please wait about 30-60 seconds and try again—your data is saved and safe.";
   }
+
   if (msg.includes("429") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("exhausted")) {
-    return "The AI engine has reached its temporary capacity (Rate Limit). This is a provider limit. Please wait 15 seconds and try again.";
+    return "We've reached the temporary limit for AI generations. This usually resets quickly. Please take a 30-second break and try again!";
   }
-  if (msg.includes("invalid_api_key") || msg.includes("401") || msg.includes("unauthorized")) {
-    return "The AI API key is invalid or has expired. Please check your settings.";
+
+  if (msg.includes("invalid_api_key") || msg.includes("401") || msg.includes("unauthorized") || msg.includes("key not found")) {
+    return "There's a small issue with the AI connection (API Key). Please check your settings or reconnect your AI key to continue.";
   }
-  return "AI Brain encountered an issue: " + (err.message || "Unknown model error");
+
+  return "The AI brain hit a small snag! It might be a temporary connection hiccup. Please try again in a few seconds.";
 }
 
 async function callGroqAPI(prompt) {
@@ -160,7 +171,7 @@ async function callGroqAPI(prompt) {
             content: prompt,
           },
         ],
-        temperature: 0.7,
+        temperature: 0.8,
       }),
     });
 
@@ -287,6 +298,72 @@ function buildSummaryPrompt(formData = {}, resumeData = {}) {
   const projectsText = getProjectsText(projectList);
   const normalizedSkills = formData.skills || getSkillsText(skillsData);
 
+  const isFresher = !experienceText && !projectsText && !normalizedSkills;
+
+  const STUDENT_HOOKS = [
+    'Lead with academic passion (e.g., "Enthusiastic Computer Science student with a deep interest in...")',
+    'Lead with fast-learning potential (e.g., "Quick learner and aspiring developer eager to apply academic knowledge to...")',
+    'Lead with a specific course focus (e.g., "Focused on mastering modern web technologies and software principles at...")',
+    'Lead with a project-driven curiosity (e.g., "Curious developer with a strong foundation in building experimental projects for...")',
+    'Lead with a foundational skill hook (e.g., "Proficient in the fundamentals of Java and Python, with a goal to...")',
+    'Lead with a "future-ready" mindset (e.g., "Ambitious student preparing for a career in technology by exploring...")',
+    'Lead with a hackathon/competition angle (e.g., "Competitive programmer and hackathon enthusiast with a track record of...")',
+    'Lead with an open-source contributor hook (e.g., "Active open-source contributor with a passion for community-driven software...")',
+    'Lead with a self-taught developer story (e.g., "Self-taught programmer who has built a diverse portfolio of applications in...")',
+    'Lead with a leadership/club role (e.g., "President of the coding club at [Institution], dedicated to fostering...")',
+    'Lead with an internship-seeking goal (e.g., "Dedicated student seeking to leverage technical training in a professional...")',
+    'Lead with a research-oriented focus (e.g., "Research-minded student with a focus on data analysis and theoretical...")',
+    'Lead with a "bridge between tech and design" hook (e.g., "UI/UX enthusiast with strong coding fundamentals, focused on...")',
+    'Lead with a mobile-first/app-dev focus (e.g., "Aspiring mobile developer with experience in building cross-platform...")',
+    'Lead with a cloud/infrastructure curiosity (e.g., "Cloud enthusiast currently exploring AWS services and serverless...")',
+    'Lead with a "problem-solver" narrative (e.g., "Relentless problem-solver who enjoys tackling complex algorithmic challenges in...")',
+    'Lead with a "multilingual developer" angle (e.g., "Versatile student proficient in multiple languages including C++, Python, and...")',
+    'Lead with an "AI/ML specialization" hook (e.g., "Aspiring ML engineer with a strong foundation in statistics and...")',
+    'Lead with a "cybersecurity-aware" hook (e.g., "Security-conscious student with a growing expertise in ethical hacking and...")',
+    'Lead with a "full-stack aspiration" hook (e.g., "Aspiring full-stack developer currently mastering both frontend and...")'
+  ];
+
+  const EXPERIENCED_HOOKS = [
+    'Lead with a specific technical specialization (e.g., "Specializing in cloud architecture and...")',
+    'Lead with an academic foundation (e.g., "Computer Science graduate from [Institution] with a focus on...")',
+    'Lead with a core professional goal (e.g., "Aspiring Software Engineer focused on building scalable...")',
+    'Lead with a high-impact skill set (e.g., "Proficient in Python, AWS, and Kubernetes, with a background in...")',
+    'Lead with a unique combination of skill and passion (e.g., "Combining a deep understanding of frontend development with a passion for...")',
+    'Lead with a problem-solving mindset (e.g., "Problem-solver dedicated to optimizing system performance and...")',
+    'Lead with a focus on future technologies (e.g., "Forward-thinking developer passionate about AI and its application in...")',
+    'Lead with a collaborative/team-player angle (e.g., "Collaborative engineer with a focus on agile methodologies and...")',
+    'Lead with a data-driven approach (e.g., "Data-driven professional with expertise in analytics and...")',
+    'Lead with a user-centric design focus (e.g., "User-centric developer focused on creating accessible and intuitive...")',
+    'Lead with a research and development hook (e.g., "R&D enthusiast focused on exploring new frontiers in...")',
+    'Lead with a security-first perspective (e.g., "Security-conscious engineer specializing in robust and safe...")',
+    'Lead with a performance optimization hook (e.g., "Performance-focused developer specializing in low-latency and...")',
+    'Lead with a "clean code" craftsmanship hook (e.g., "Clean code advocate dedicated to building maintainable and...")'
+  ];
+
+  const STRUCTURAL_JITTER = [
+    "Use a formal and academic tone.",
+    "Use a modern, tech-startup vibe.",
+    "Focus heavily on specific tools and technologies.",
+    "Focus heavily on soft skills and collaboration.",
+    "Keep sentences extremely short and punchy.",
+    "Use slightly more sophisticated and varied vocabulary.",
+    "Emphasize the transition from student to professional.",
+    "Emphasize project-based experience and practical results.",
+    "Focus on potential and fast-learning capabilities.",
+    "Keep the language very direct and objective."
+  ];
+
+  // ✅ SEQUENTIAL DNA SEEDING
+  // We use a combination of a persistent counter and the current timestamp
+  // to ensure that even simultaneous users get unique prompts.
+  const varietyIndex = parseInt(localStorage.getItem('career_copilot_variety_idx') || '0');
+  localStorage.setItem('career_copilot_variety_idx', (varietyIndex + 1) % 1000);
+  
+  const seed = Date.now() + varietyIndex;
+  const activeHooks = isFresher ? STUDENT_HOOKS : EXPERIENCED_HOOKS;
+  const chosenHook = activeHooks[seed % activeHooks.length];
+  const chosenJitter = STRUCTURAL_JITTER[seed % STRUCTURAL_JITTER.length];
+
   return `
 You are an expert resume writer.
 
@@ -308,16 +385,25 @@ Important rules:
 - Keep it ATS-friendly.
 - Do not use first person words like I, me, my.
 - Do not invent fake companies, fake achievements, fake metrics, or fake experience.
-- If the candidate is a fresher, make it sound strong but realistic.
+- If data is sparse, focus on **Aspiration**, **Potential**, and **Alignment** with the Target Role.
 - Focus on role alignment, strengths, skills, projects, and career direction.
 - Avoid buzzword stuffing.
 - Do not use headings.
 - Do not use bullet points.
 - Return only the final summary text.
 
+✅ CRITICAL RULE FOR VARIETY (GENETIC JITTER):
+- DO NOT start with "Results-driven", "Results-oriented", "Highly motivated", "Dedicated", "Detail-oriented", or "Experienced".
+- OPENING STRATEGY: ${chosenHook}
+- STRUCTURAL STYLE: ${chosenJitter}
+- Ensure the sentence structure is fresh, modern, and punchy.
+
 Output requirements:
-- Write exactly 3 lines.
-- Keep it polished, modern, and directly usable inside a resume.
+- Write exactly 3 distinct, high-impact sentences.
+- DO NOT use the candidate's name (e.g., "${fullName}"). Jump straight into the skills and experience.
+- DO NOT use placeholders like [Institution], [Company], or [Role].
+- Use "Power Verbs" and keep each sentence under 25 words.
+- Keep it sharp, professional, and directly usable inside a resume.
 `.trim();
 }
 
@@ -560,25 +646,56 @@ Rules:
   }
 }
 
+async function withRetry(fn, retries = 3, delay = 2000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = (err.message || String(err)).toLowerCase();
+      const isRetryable = 
+        msg.includes("503") || 
+        msg.includes("busy") || 
+        msg.includes("overloaded") || 
+        msg.includes("429") ||
+        msg.includes("rate limit") ||
+        msg.includes("demand") ||
+        msg.includes("temporary") ||
+        msg.includes("unavailable");
+
+      if (isRetryable && i < retries - 1) {
+        console.warn(`AI is busy, retrying attempt ${i + 1}/${retries}...`);
+        await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); // Exponential backoff
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export async function generateResumeSection(
   sectionKey,
   userData = {},
   sectionFormData = {}
 ) {
-  const provider = getAIProvider();
-  const prompt = buildResumePrompt(sectionKey, userData, sectionFormData);
+  return await withRetry(async () => {
+    const provider = getAIProvider();
+    const prompt = buildResumePrompt(sectionKey, userData, sectionFormData);
 
-  if (provider === "groq") {
-    return await callGroqAPI(prompt);
-  }
+    if (provider === "groq") {
+      return await callGroqAPI(prompt);
+    }
 
-  const ai = getGeminiClient();
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      generationConfig: {
+        temperature: 0.8,
+      },
+    });
+
+    return cleanAIResponse(extractText(response));
   });
-
-  return cleanAIResponse(extractText(response));
 }
 
 function buildKeywordGenerationPrompt(resumeData, jobDescription) {
