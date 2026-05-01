@@ -49,7 +49,7 @@ function HeroSection() {
             variants={fadeInUp}
             className="max-w-3xl text-4xl font-bold leading-tight text-[var(--color-text)] md:text-5xl lg:text-6xl"
           >
-            Master Your Future with the Ultimate <span className="text-[var(--color-primary)]">Career Copilot</span>
+            Your career starts with a <span className="text-[var(--color-primary)]">better resume.</span>
           </motion.h1>
 
           <motion.p 
