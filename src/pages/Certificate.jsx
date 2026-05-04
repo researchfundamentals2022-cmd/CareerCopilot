@@ -10,6 +10,7 @@ import { jsPDF } from "jspdf";
 import logo from "../assets/Carrer_Copilot_Logo.png";
 import stamp from "../assets/certificate_stamp.png";
 import { motion, AnimatePresence } from "framer-motion";
+import SEO from "../components/common/SEO";
 
 const Certificate = () => {
   const { profile, user, refreshProfile } = useAuth();
@@ -25,12 +26,12 @@ const Certificate = () => {
   const [issueDate, setIssueDate] = useState("");
   const hasLoaded = useRef(false);
 
-  // New College Personalization State
-  const [accessCode, setAccessCode] = useState("");
-  const [isRedeeming, setIsRedeeming] = useState(false);
-  const [collegeData, setCollegeData] = useState(null);
-  const [redeemError, setRedeemError] = useState("");
-  const [showRedeemSuccess, setShowRedeemSuccess] = useState(false);
+  const [collegeName, setCollegeName] = useState(""); // Saved state
+  const [branchName, setBranchName] = useState("");   // Saved state
+  const [inputCollege, setInputCollege] = useState(""); // UI typing state
+  const [inputBranch, setInputBranch] = useState("");   // UI typing state
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState(null);
 
   // Hardened Image Export States
   const [logoBase64, setLogoBase64] = useState(logo);
@@ -92,15 +93,19 @@ const Certificate = () => {
           .join(' ');
         
         setCertName(formattedName);
-
-        if (profileData?.college_event_id) {
-          const { data: eventData } = await supabase
-            .from("college_events")
-            .select("*")
-            .eq("id", profileData.college_event_id)
-            .single();
-          
-          if (eventData) setCollegeData(eventData);
+        
+        // Pull from student_certificates table instead of profiles
+        const { data: certDetails } = await supabase
+          .from("student_certificates")
+          .select("college_name, branch_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        if (certDetails) {
+          setCollegeName(certDetails.college_name);
+          setBranchName(certDetails.branch_name);
+          setInputCollege(certDetails.college_name);
+          setInputBranch(certDetails.branch_name);
         }
 
       } catch (err) {
@@ -113,41 +118,39 @@ const Certificate = () => {
     initializeCertificate();
   }, [user]);
 
-  const handleRedeemCode = async (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (!accessCode.trim()) return;
+    if (!inputCollege.trim() || !inputBranch.trim()) {
+      setUpdateMessage({ type: 'error', text: "Please fill all fields" });
+      return;
+    }
     
-    setIsRedeeming(true);
-    setRedeemError("");
+    setIsUpdating(true);
+    setUpdateMessage(null);
 
     try {
-      const { data: eventData, error: eventError } = await supabase
-        .from("college_events")
-        .select("*")
-        .eq("access_code", accessCode.trim().toUpperCase())
-        .single();
+      const { error } = await supabase
+        .from("student_certificates")
+        .upsert({ 
+          user_id: user.id,
+          college_name: inputCollege.trim(),
+          branch_name: inputBranch.trim(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
 
-      if (eventError || !eventData) {
-        throw new Error("Invalid access code.");
-      }
+      if (error) throw error;
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ college_event_id: eventData.id })
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
-
-      setCollegeData(eventData);
-      setShowRedeemSuccess(true);
-      setTimeout(() => setShowRedeemSuccess(false), 3000);
-      setAccessCode("");
+      // Update the saved state only on success
+      setCollegeName(inputCollege.trim());
+      setBranchName(inputBranch.trim());
       
-      refreshProfile();
+      setUpdateMessage({ type: 'success', text: "Certificate details saved!" });
+      setTimeout(() => setUpdateMessage(null), 3000);
     } catch (err) {
-      setRedeemError(err.message);
+      console.error("Update error:", err);
+      setUpdateMessage({ type: 'error', text: "Save failed. Try again." });
     } finally {
-      setIsRedeeming(false);
+      setIsUpdating(false);
     }
   };
 
@@ -315,57 +318,101 @@ const Certificate = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-6 md:py-10 px-4" ref={containerRef}>
+      <SEO 
+        title="Official Certificate | Career Copilot Certification"
+        description="View and download your official Career Copilot certification for AI-driven resume engineering."
+        path="/certificate"
+      />
       <div className="max-w-[1000px] mx-auto flex flex-col items-center">
         
-        {/* Controls Container (Dynamic Styling OK here, outside capture) */}
-        <div className="w-full mb-8 space-y-6 no-print animate-page-entry">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="w-full md:w-auto">
-              {!collegeData ? (
-                <form onSubmit={handleRedeemCode} className="relative group max-w-sm">
-                  <div className="absolute -inset-1 bg-linear-to-r from-[#35008B] to-[#fbbf24] rounded-xl blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
-                  <div className="relative flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden p-1 shadow-sm">
-                    <input 
-                      type="text"
-                      placeholder="Enter College Code..."
-                      value={accessCode}
-                      onChange={(e) => setAccessCode(e.target.value)}
-                      className="flex-1 bg-transparent border-none focus:ring-0 px-4 py-2 text-sm font-bold placeholder:font-normal uppercase"
-                    />
+        {/* Personalization Section */}
+        <div className="w-full mb-10 no-print animate-page-entry">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm block">
+              <form onSubmit={handleUpdateProfile} className="w-full block">
+                <div className="flex flex-col gap-6">
+                  {/* Top Row: Header & Save Button */}
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#35008B]/5 rounded-2xl flex items-center justify-center text-[#35008B] shrink-0">
+                        <TbCertificate size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 leading-tight">Personalize Your Certificate</h3>
+                        <p className="text-sm text-slate-500 font-medium flex items-center gap-1.5 mt-1">
+                          <RiAwardFill className="text-[#DAA520]" size={14} />
+                          Enter details to update your achievement.
+                        </p>
+                      </div>
+                    </div>
+                    
                     <button 
                        type="submit"
-                       disabled={isRedeeming}
-                       className="bg-[#35008B] text-white px-5 py-2 rounded-lg text-xs font-bold transition hover:bg-slate-900 disabled:opacity-50"
+                       disabled={isUpdating}
+                       className="bg-[#35008B] text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition hover:opacity-90 active:scale-95 disabled:opacity-50 whitespace-nowrap shadow-lg shadow-[#35008B]/10 w-full md:w-auto order-first md:order-last mb-4 md:mb-0"
                     >
-                      {isRedeeming ? "Wait..." : "Apply"}
+                      {isUpdating ? "Saving..." : "Save Details"}
                     </button>
                   </div>
-                  {redeemError && <p className="absolute -bottom-6 left-2 text-[10px] text-red-500 font-bold uppercase">{redeemError}</p>}
-                </form>
-              ) : (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f5f3ff] border border-[#ddd6fe] text-[#35008B]">
-                  <RiShieldCheckFill className="animate-pulse" />
-                  <span className="text-xs font-bold uppercase tracking-tight">Institution Verified: {collegeData.college_abbreviation}</span>
-                </div>
-              )}
-            </div>
 
-            <div className="flex gap-3">
-              <button 
-                onClick={handleDownloadPNG} 
-                disabled={isSharing}
-                className="bg-white border-2 border-slate-200 px-5 py-2.5 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2 text-sm disabled:opacity-50"
-              >
-                <FiShare2 className={isSharing ? "animate-spin" : "text-[#35008B]"} />
-                Download PNG
-              </button>
-              <button 
-                onClick={handleDownloadPDF} 
-                className="bg-[#35008B] px-6 py-2.5 rounded-xl text-white font-bold hover:opacity-90 transition shadow-lg flex items-center gap-2 text-sm"
-              >
-                <FiDownload /> Download PDF
-              </button>
+                  {/* Bottom Row: Inputs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative group">
+                      <input 
+                        type="text"
+                        placeholder="e.g. Stanford University"
+                        value={inputCollege}
+                        onChange={(e) => setInputCollege(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold placeholder:font-medium placeholder:text-slate-300 focus:bg-white focus:border-[#35008B] focus:ring-4 focus:ring-[#35008B]/5 outline-none transition-all"
+                      />
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400">College Name</label>
+                    </div>
+
+                    <div className="relative group">
+                      <input 
+                        type="text"
+                        placeholder="e.g. Computer Science"
+                        value={inputBranch}
+                        onChange={(e) => setInputBranch(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold placeholder:font-medium placeholder:text-slate-300 focus:bg-white focus:border-[#35008B] focus:ring-4 focus:ring-[#35008B]/5 outline-none transition-all"
+                      />
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400">Department / Branch</label>
+                    </div>
+                  </div>
+                </div>
+                {updateMessage && (
+                  <p className={`mt-3 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${updateMessage.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
+                    {updateMessage.type === 'error' ? <RiShieldCheckFill className="opacity-50" /> : <RiShieldCheckFill />}
+                    {updateMessage.text}
+                  </p>
+                )}
+
+                {!updateMessage && !collegeName && (
+                  <p className="mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <FiLock size={12} className="opacity-60" />
+                    Certificate will show "Global Fellow" until you save your details.
+                  </p>
+                )}
+              </form>
             </div>
+        </div>
+
+        {/* Controls Container */}
+        <div className="w-full mb-8 no-print animate-page-entry flex justify-end">
+          <div className="flex gap-3">
+            <button 
+              onClick={handleDownloadPNG} 
+              disabled={isSharing}
+              className="bg-white border border-slate-200 px-6 py-3 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2 text-sm disabled:opacity-50"
+            >
+              <FiShare2 className={isSharing ? "animate-spin" : "text-[#35008B]"} />
+              Export PNG
+            </button>
+            <button 
+              onClick={handleDownloadPDF} 
+              className="bg-[#35008B] px-8 py-3 rounded-xl text-white font-bold hover:opacity-90 transition shadow-xl shadow-[#35008B]/20 flex items-center gap-2 text-sm"
+            >
+              <FiDownload /> Download PDF
+            </button>
           </div>
         </div>
 
@@ -426,11 +473,11 @@ const Certificate = () => {
                   </h2>
                 </div>
 
-                <div className="mb-8">
-                   <p className="text-[13px] font-bold uppercase tracking-[0.2em]" style={{ color: '#35008B' }}>
-                      {collegeData ? `${collegeData.branch_name} • ${collegeData.college_name}` : "Career Copilot Global Fellow"}
-                   </p>
-                </div>
+                 <div className="mb-8">
+                    <p className="text-[13px] font-bold uppercase tracking-[0.2em]" style={{ color: '#35008B' }}>
+                       {branchName && collegeName ? `${branchName} • ${collegeName}` : "Career Copilot Global Fellow"}
+                    </p>
+                 </div>
 
                 <div className="max-w-3xl px-4">
                    <p className="text-base font-bold mb-3 tracking-tight" style={{ color: '#1e293b' }}>

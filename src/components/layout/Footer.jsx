@@ -17,7 +17,7 @@ function Footer() {
               />
 
               <span className="-ml-0.5 text-xl font-bold tracking-[-0.03em] text-[var(--color-primary)] md:text-2xl">
-                areer Copilot
+                <span className="sr-only">C</span>areer Copilot
               </span>
             </div>
 

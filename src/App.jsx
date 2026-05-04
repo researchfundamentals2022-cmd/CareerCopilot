@@ -12,7 +12,7 @@ const ConnectGemini = lazy(() => import("./pages/ConnectGemini"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const CollegeIntake = lazy(() => import("./pages/CollegeIntake"));
+
 const ResumeBuilder = lazy(() => import("./pages/ResumeBuilder"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Certificate = lazy(() => import("./pages/Certificate"));
@@ -47,7 +47,7 @@ function App() {
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/connect-gemini" element={<ConnectGemini />} />
                 <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/college-intake" element={<CollegeIntake />} />
+
                 <Route 
                   path="/dashboard" 
                   element={

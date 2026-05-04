@@ -74,7 +74,7 @@ function Navbar() {
             className="-ml-1 text-[1.35rem] font-bold tracking-[-0.03em] text-[var(--color-primary)] leading-none md:text-[1.75rem]"
             aria-label="Career Copilot"
           >
-            areer Copilot
+            <span className="sr-only">C</span>areer Copilot
           </span>
         </Link>
         </div>
@@ -181,14 +181,7 @@ function Navbar() {
                       <IoFlashOutline className="text-lg text-slate-400 transition-colors group-hover:text-white" />
                       Connect Gemini
                     </Link>
-                    <Link
-                      to="/onboarding"
-                      onClick={() => setShowDropdown(false)}
-                      className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold text-slate-600 transition-all hover:bg-[var(--color-primary)] hover:text-white group"
-                    >
-                      <IoRocketOutline className="text-lg text-slate-400 transition-colors group-hover:text-white" />
-                      Onboarding Page
-                    </Link>
+
                     <div className="my-1.5 h-px bg-slate-100 mx-2" />
                     <button
                       onClick={handleLogout}
