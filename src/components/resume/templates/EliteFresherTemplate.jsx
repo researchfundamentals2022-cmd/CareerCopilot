@@ -178,11 +178,11 @@ const ResumeHeader = ({ contact, fitConfig }) => {
   const otherLinks = normalizeNamedLinks(contact?.otherLinks);
 
   const linkParts = [
-    linkedin ? <span key="linkedin">LinkedIn:- <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{linkedin.replace(/^https?:\/\//, "")}</a></span> : "",
-    github ? <span key="github">GitHub:- <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{github.replace(/^https?:\/\//, "")}</a></span> : "",
+    linkedin ? <span key="linkedin">LinkedIn: <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{linkedin.replace(/^https?:\/\//, "")}</a></span> : "",
+    github ? <span key="github">GitHub: <a href={github.startsWith('http') ? github : `https://${github}`} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{github.replace(/^https?:\/\//, "")}</a></span> : "",
     ...otherLinks.map((l, i) => {
       const fullUrl = l.url.startsWith('http') ? l.url : `https://${l.url}`;
-      return <span key={`other-${i}`}>{l.label ? l.label + ":- " : ""}<a href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{l.url.replace(/^https?:\/\//, "")}</a></span>;
+      return <span key={`other-${i}`}>{l.label ? l.label + ": " : ""}<a href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{l.url.replace(/^https?:\/\//, "")}</a></span>;
     })
   ].filter(Boolean);
 
@@ -286,9 +286,8 @@ const EliteExperienceProjectsSection = ({ experiences = [], projects = [], fitCo
           return (
             <div key={`exp-${index}`} className="break-inside-avoid">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2px", lineHeight: 1.18 }}>
-                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, fontWeight: 700, textTransform: "uppercase", display: "flex", alignItems: "flex-start", gap: "6px" }}>
-                  <span style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, color: "#000", marginTop: "1px", flexShrink: 0 }}>➤</span>
-                  <span>{company}{location ? ` | ${location}` : ""}</span>
+                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textTransform: "uppercase", display: "flex", alignItems: "flex-start" }}>
+                  <span><span style={{ fontWeight: 700 }}>{company}</span>{location ? ` | ${location}` : ""}</span>
                 </div>
                 <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{dateText}</div>
               </div>
@@ -324,9 +323,8 @@ const EliteExperienceProjectsSection = ({ experiences = [], projects = [], fitCo
           return (
             <div key={`proj-${index}`} className="break-inside-avoid">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2px", lineHeight: 1.18 }}>
-                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, fontWeight: 700, textTransform: "uppercase", display: "flex", alignItems: "flex-start", gap: "6px" }}>
-                   <span style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, color: "#000", marginTop: "1px", flexShrink: 0 }}>➤</span>
-                  <span>{title}{organization ? ` | ${organization}` : ""}</span>
+                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textTransform: "uppercase", display: "flex", alignItems: "flex-start" }}>
+                   <span><span style={{ fontWeight: 700 }}>{title}</span>{organization ? ` | ${organization}` : ""}</span>
                 </div>
                 <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{dateText}</div>
               </div>
@@ -375,7 +373,7 @@ const EducationSection = ({ items, fitConfig }) => {
                   </div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  {score && <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, fontWeight: 700 }}>CGPA:- {score}</div>}
+                  {score && <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, fontWeight: 700 }}>CGPA: {score}</div>}
                   <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px` }}>{dateText}</div>
                 </div>
               </div>
