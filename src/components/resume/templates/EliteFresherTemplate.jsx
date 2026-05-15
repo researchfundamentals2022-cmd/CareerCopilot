@@ -168,9 +168,9 @@ const ResumeHeader = ({ contact, fitConfig }) => {
   ));
 
   const contactParts = [
-    contact?.phone ? `Ph:${cleanInlineText(contact.phone)}` : "",
+    contact?.phone ? `Phone: ${cleanInlineText(contact.phone)}` : "",
     contact?.email ? <span key="email">Email: <a href={`mailto:${cleanInlineText(contact.email)}`} style={{ color: "inherit", textDecoration: "none" }}>{cleanInlineText(contact.email)}</a></span> : "",
-    contact?.location ? `Add: ${cleanInlineText(contact.location)}` : "",
+    contact?.location ? `Location: ${cleanInlineText(contact.location)}` : "",
   ].filter(Boolean);
 
   const linkedin = cleanInlineText(contact?.linkedinUrl);
