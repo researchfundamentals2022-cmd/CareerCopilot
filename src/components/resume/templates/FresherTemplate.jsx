@@ -24,11 +24,21 @@ const buildDateRange = ({
   return "";
 };
 
+
+const parseFormattedText = (text) => {
+  if (typeof text !== 'string') return text;
+  const parts = text.split(/(\*\*.*?\*\*|__.*?__)/g);
+  return parts.map((part, index) => {
+    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
+      return <strong key={index} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
 const cleanInlineText = (value = "") => {
   return String(value || "")
     .replace(/\r/g, "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/__(.*?)__/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
     .replace(/\s+/g, " ")
@@ -207,9 +217,7 @@ const ProfessionalSummary = ({ text, fitConfig }) => {
   return (
     <section className="break-inside-avoid">
       <SectionHeader title="SUMMARY" fitConfig={fitConfig} />
-      <p style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.15, color: "#000", margin: 0, textAlign: "justify" }}>
-        {text}
-      </p>
+      <p style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.15, color: "#000", margin: 0, textAlign: "justify" }}>{parseFormattedText(text)}</p>
     </section>
   );
 };
@@ -287,7 +295,7 @@ const BulletBlock = ({ bullets, fitConfig, indent = "32px" }) => {
       listStyleType: "disc",
     }}>
       {bullets.map((bullet, index) => (
-        <li key={index} style={{ marginBottom: "2px" }}>{bullet}</li>
+        <li key={index} style={{ marginBottom: "2px" }}>{parseFormattedText(bullet)}</li>
       ))}
     </ul>
   );
@@ -329,7 +337,7 @@ const ExperienceSection = ({ items, fitConfig }) => {
               {bullets.length > 0 ? (
                 <BulletBlock bullets={bullets} fitConfig={fitConfig} indent="32px" />
               ) : (
-                <p style={{ margin: 0, paddingLeft: "32px", fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.18 }}>{paragraph}</p>
+                <p style={{ margin: 0, paddingLeft: "32px", fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.18 }}>{parseFormattedText(paragraph)}</p>
               )}
             </div>
           );
@@ -377,7 +385,7 @@ const ProjectsSection = ({ items, fitConfig }) => {
               {bullets.length > 0 ? (
                 <BulletBlock bullets={bullets} fitConfig={fitConfig} indent="32px" />
               ) : (
-                <p style={{ margin: 0, paddingLeft: "32px", fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.18 }}>{paragraph}</p>
+                <p style={{ margin: 0, paddingLeft: "32px", fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.18 }}>{parseFormattedText(paragraph)}</p>
               )}
             </div>
           );
@@ -443,7 +451,7 @@ const CustomDynamicSection = ({ title, items, fitConfig }) => {
               {bullets.length > 0 ? (
                 <BulletBlock bullets={bullets} fitConfig={fitConfig} indent="18px" />
               ) : (
-                <p style={{ margin: 0, paddingLeft: "18px", fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.15 }}>{paragraph}</p>
+                <p style={{ margin: 0, paddingLeft: "18px", fontSize: `${fitConfig.bodyFont + 1.5}px`, lineHeight: 1.15 }}>{parseFormattedText(paragraph)}</p>
               )}
             </div>
           );

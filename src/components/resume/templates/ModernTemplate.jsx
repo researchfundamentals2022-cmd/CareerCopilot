@@ -24,11 +24,21 @@ const buildDateRange = ({
   return "";
 };
 
+
+const parseFormattedText = (text) => {
+  if (typeof text !== 'string') return text;
+  const parts = text.split(/(\*\*.*?\*\*|__.*?__)/g);
+  return parts.map((part, index) => {
+    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
+      return <strong key={index} style={{ fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
 const cleanInlineText = (value = "") => {
   return String(value || "")
     .replace(/\r/g, "")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/__(.*?)__/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
     .replace(/\s+/g, " ")
@@ -268,9 +278,7 @@ const SummarySection = ({ text, fitConfig }) => {
           textAlign: "justify",
           textJustify: "inter-word",
         }}
-      >
-        {text}
-      </p>
+      >{parseFormattedText(text)}</p>
     </section>
   );
 };
@@ -294,9 +302,7 @@ const BulletBlock = ({ bullets, fitConfig }) => {
           style={{
             marginBottom: `${fitConfig.bulletGap}px`,
           }}
-        >
-          {bullet}
-        </li>
+        >{parseFormattedText(bullet)}</li>
       ))}
     </ul>
   );
@@ -315,9 +321,7 @@ const ParagraphBlock = ({ text, fitConfig }) => {
         textAlign: "justify",
         textJustify: "inter-word",
       }}
-    >
-      {text}
-    </p>
+    >{parseFormattedText(text)}</p>
   );
 };
 
