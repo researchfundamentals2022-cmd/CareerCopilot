@@ -325,8 +325,8 @@ const ExperienceSection = ({ items, fitConfig }) => {
           return (
             <div key={index} className="break-inside-avoid">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0px", lineHeight: 1.18 }}>
-                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textTransform: "uppercase", display: "flex", alignItems: "flex-start" }}>
-                  <span><span style={{ fontWeight: 700 }}>{company}</span>{location ? ` | ${location}` : ""}</span>
+                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, display: "flex", alignItems: "flex-start" }}>
+                  <span><span style={{ fontWeight: 700, textTransform: "uppercase" }}>{company}</span>{location ? ` | ${location}` : ""}</span>
                 </div>
                 <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{dateText}</div>
               </div>
@@ -371,8 +371,8 @@ const ProjectsSection = ({ items, fitConfig }) => {
           return (
             <div key={index} className="break-inside-avoid">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0px", lineHeight: 1.18 }}>
-                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textTransform: "uppercase", display: "flex", alignItems: "flex-start" }}>
-                  <span><span style={{ fontWeight: 700 }}>{title}</span>{organization ? ` | ${organization}` : ""}</span>
+                <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, display: "flex", alignItems: "flex-start" }}>
+                  <span><span style={{ fontWeight: 700, textTransform: "uppercase" }}>{title}</span>{organization ? ` | ${organization}` : ""}</span>
                 </div>
                 <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{dateText}</div>
               </div>
