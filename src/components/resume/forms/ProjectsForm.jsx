@@ -14,7 +14,7 @@ import { createEmptyProjectItem, isObjectiveText } from "../../../utils/resumeSc
 
 const PROJECT_TYPE_OPTIONS = [
   "Academic",
-  "Personal",
+  "Personal Project",
   "Freelance",
   "Internship",
   "Research",

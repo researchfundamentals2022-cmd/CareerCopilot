@@ -7,7 +7,7 @@ const SKILL_CATEGORIES = [
   "Programming",
   "Web Development",
   "Data Science",
-  "AI / ML",
+  "AI/ML",
   "Cloud / DevOps",
   "Databases",
   "Tools / Platforms",
@@ -46,7 +46,7 @@ const SKILL_SUGGESTIONS = {
     "Feature Engineering",
     "Data Visualization",
   ],
-  "AI / ML": [
+  "AI/ML": [
     "Machine Learning",
     "Deep Learning",
     "TensorFlow",
