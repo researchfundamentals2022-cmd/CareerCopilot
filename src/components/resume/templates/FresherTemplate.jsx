@@ -331,7 +331,7 @@ const ExperienceSection = ({ items, fitConfig }) => {
                 <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{dateText}</div>
               </div>
               <div style={{ fontSize: `${fitConfig.bodyFont + 1.5}px`, fontWeight: 700, marginBottom: "1px", paddingLeft: "18px", lineHeight: 1.18 }}>
-                {role}{employmentType ? ` (${employmentType})` : ""}
+                {role}{employmentType ? `, ${employmentType}` : ""}
               </div>
               {bullets.length > 0 ? (
                 <BulletBlock bullets={bullets} fitConfig={fitConfig} indent="32px" />
